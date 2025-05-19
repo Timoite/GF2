@@ -1,6 +1,9 @@
 devices_string = "SWITCH_1=SWITCH/1,SWITCH_2=SWITCH/0,CLK_1=CLOCK/3,NOT_1=NOT,NOR_1=NOR/2,DTYPE_1=DTYPE,"
 connections_string = "WIRE_1=SWITCH_1>NOT_1,WIRE_2=NOT_1>NOR_1-I1,WIRE_3=SWITCH_2>NOR_1-I2,WIRE_4=NOR_1>DTYPE_1-DATA,WIRE_5=CLK_1>DTYPE_1-CLK,"
 monitors_string = "MONITOR_1=DTYPE_1-Q,"
+devices_string_2 = "SWITCH_1=SWITCH/1,CLK_1=CLOCK/3,CLK_2=CLOCK/7,XOR_1=XOR,NOR_1=NOR/2,NAND_1=NAND/2,OR_1=OR/3,"
+connections_string_2 = "WIRE_1=SWITCH_1>XOR_1-I1,WIRE_2=CLK_1>XOR_1-I2,WIRE_3=CLK_1>NOR_1-I1,WIRE_4=CLK_2>NOR_1-I2,WIRE_5=CLK_2>OR_1-I3,WIRE_6=XOR_1>NAND_1-I1,WIRE_7=NOR_1>NAND_1-I2,WIRE_8=XOR_1>OR_1-I1,WIRE_9=NOR_1>OR_1-I2,"
+monitors_string_2 = "MONITOR_1=NAND_1,MONITOR_2=OR_1,"
 
 def device_parser(string):
     i = 0
@@ -596,6 +599,21 @@ print(results2[2])
 print(results2[3])
 print(results2[4])
 results3 = monitors_parser(monitors_string)
+print(results3[0])
+print(results3[1])
+print(results3[2])
+print("")
+results = device_parser(devices_string_2)
+print(results[0])
+print(results[1])
+print(results[2])
+results2 = connection_parser(connections_string_2)
+print(results2[0])
+print(results2[1])
+print(results2[2])
+print(results2[3])
+print(results2[4])
+results3 = monitors_parser(monitors_string_2)
 print(results3[0])
 print(results3[1])
 print(results3[2])
