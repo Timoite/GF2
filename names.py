@@ -46,18 +46,34 @@ class Names:
 
     def unique_error_codes(self, num_error_codes):
         """Return a list of unique integer error codes."""
-        if isinstance(num_error_codes, int) and num_error_codes < 0:
+
+        # num_error_codes is a positive integer
+        if isinstance(num_error_codes, int) and num_error_codes < 1:
             raise ValueError("Number of error codes must be a positive integer.")
-        elif num_error_codes < 1:
-            raise ValueError("Number of error codes must be at least 1.")
         codes = []
+
+        # loop through the number of error and assign them unique codes
         for i in range(num_error_codes):
+
+            # error code count may not be 0 initially, so accumulate on it
             code = self.error_code_count + i
-            if code in self.names_dict:
+            
+            '''
+            # it is unlikely that the error code as long as error_code_count matches the number of error in the dict.
+            if code in self.names_dict: # check if code already exists
                 raise ValueError(f"Error code {code} already exists.")
+            '''
+
             codes.append(code)
         
         self.error_code_count += num_error_codes
+
+        # add the error codes to the names list and dict
+        for code in codes:
+            if code not in self.names_dict:
+                self.names.append(code)
+                self.names_dict[code] = len(self.names) - 1 # matches the id definition below
+
         return codes
         
 
