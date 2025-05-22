@@ -109,7 +109,9 @@ class Names:
 
         If the name_id is not an index in the names list, return None.
         """
-        if name_id < 0 or name_id >= len(self.names):
+        if name_id < 0 or not isinstance(name_id, int):
+            raise ValueError("ID must be a non-negative integer.")
+        elif name_id >= len(self.names):
             return None
         else:
             return self.names[name_id]
