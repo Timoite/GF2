@@ -66,9 +66,10 @@ class Names:
 
             codes.append(code)
         
+        # update the error code count
         self.error_code_count += num_error_codes
 
-        # add the error codes to the names list and dict
+        # update the error codes to the names list and dict
         for code in codes:
             if code not in self.names_dict:
                 self.names.append(code)
@@ -98,8 +99,8 @@ class Names:
             if name_string in self.names_dict:
                 pass
             else:
-                self.names_list.append(name_string)
-                self.names_dict[name_string] = len(self.names_list) - 1
+                self.names.append(name_string)
+                self.names_dict[name_string] = len(self.names) - 1
             ids.append(self.names_dict[name_string])
         return ids
 
@@ -108,9 +109,9 @@ class Names:
 
         If the name_id is not an index in the names list, return None.
         """
-        if name_id < 0 or name_id >= len(self.names_list):
+        if name_id < 0 or name_id >= len(self.names):
             return None
         else:
-            return self.names_list[name_id]
+            return self.names[name_id]
         
 
