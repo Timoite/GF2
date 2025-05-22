@@ -1,3 +1,5 @@
+import sys
+
 """Read the circuit definition file and translate the characters into symbols.
 
 Used in the Logic Simulator project to read the characters in the definition
@@ -8,8 +10,6 @@ Classes
 Scanner - reads definition file and translates characters into symbols.
 Symbol - encapsulates a symbol and stores its properties.
 """
-
-import sys
 
 
 class Symbol:
@@ -53,87 +53,93 @@ class Scanner:
 
     def __init__(self, path, names):
         """Open specified file and initialise reserved words and IDs."""
-        self.names = names
+        print("\nNow opening file...")
+        print("Path: " + path)
         try:
-            self.file = open(path, 'r')
+            file = open(path, "r")
         except FileNotFoundError:
-            print(f"File {path} not found.")
-            sys.exit()
-        self.contents = self.file.read()
-        self.file.close()
-
-        '''
-        # define
-        self.self.devices_found = 0
-        self.self.devices_index = 0
-        self.connection_found = 0
-        self.connection_index = 0
-        self.monitors_found = 0
-        self.monitors_index = 0
-        '''
-
-        self._find()
-
-        self.devices = self.contents[self.devices_index+7:self.connections_index].replace(" ", "").replace("\n", "")
-        self.connections = self.contents[self.connections_index+11:self.monitors_index].replace(" ", "").replace("\n", "")
-        self.monitors = self.contents[self.monitors_index+8:].replace(" ", "").replace("\n", "")
-
-        '''
-        print(self.devices)
-        print("")
-        print(self.connections)
-        print("")
-        print(self.monitors)
-        '''
-
-
-    
-    def _find(self):
-
-        self.self.devices_found = self.connections_found = self.monitors_found = 0
-        self.self.devices_index = self.connections_index = self.monitors_index = -1 # not found yet
-        i = 0
-        
-        while i < len(self.contents) - 10:
-            if self.contents[i:i+7] == "DEVICES":
-                if self.devices_found == 1:
-                    print("File self.contents Error! There should only be one DEVICES header.")
-                    sys.exit()
-                else:
-                    self.devices_found = 1
-                    self.devices_index = i
-            elif self.contents[i:i+11] == "CONNECTIONS":
-                if self.connections_found == 1:
-                    print("File self.contents Error! There should only be one CONNECTIONS header.")
-                    sys.exit()
-                else:
-                    self.connections_found = 1
-                    self.connections_index = i
-            elif self.contents[i:i+8] == "MONITORS":
-                if self.monitors_found == 1:
-                    print("File self.contents Error! There should only be one MONITORS header.")
-                    sys.exit()
-                else:
-                    self.monitors_found = 1
-                    self.monitors_index = i
-            i += 1
-        
-        if self.devices_found == 0:
-            print("File Contents Error! The file must include a DEVICES header.")
-            sys.exit()
-        if self.connections_found == 0:
-            print("File Contents Error! The file must include a CONNECTIONS header.")
-            sys.exit()
-        if self.monitors_found == 0:
-            print("File Contents Error! The file must include a MONITORS header.")
-            sys.exit()
-        if (self.devices_index > self.connections_index or self.devices_index > self.monitors_index or self.connections_index > self.monitors_index):
-            print("File Contents Error! The file's headings must be in the order DEVICES, CONNECTIONS, MONITORS.")
-            sys.exit()
-        
-
-        
+            print("Error: file not found.")
+        self.contents = file.read()
+        file.close()
+        self.names = names
+        self.symbol_type_list = [self.KEYWORD, self.STRING, self.INTEGER,
+                                  self.COMMA, self.ARROW, self.EQUALS, self.SLASH, self.DASH, self.UNDERSCORE]
+        self.keywords_list = ["DEVICES", "CONNECTIONS", "MONITORS"]
+        [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.END_ID] = self.names.lookup(self.keywords_list)
+        self.current_character = ""
 
     def get_symbol(self):
+        symbol = Symbol()
+        self.skip_whitespace()
+        if self.current_character.isalpha(): # string
+            string = self.get_string()
+            if string in self.keywords_list:
+                symbol.type = self.KEYWORD
+            else:
+                symbol.type = self.STRING
+            symbol.id = self.names.lookup(string)
+        elif self.current_character.isdigit(): # integer
+            symbol.id = self.get_integer()
+            symbol.type = self.INTEGER
+        elif self.current_character == "=": # punctuation
+            symbol.type = self.EQUALS
+            self.advance()
+        elif self.current_character == "-": # punctuation
+            symbol.type = self.DASH
+            self.advance()
+        elif self.current_character == "/": # punctuation
+            symbol.type = self.SLASH
+            self.advance()
+        elif self.current_character == ",": # punctuation
+            symbol.type = self.COMMA
+            self.advance()
+        elif self.current_character == ">": # punctuation
+            symbol.type = self.ARROW
+            self.advance()
+        elif self.current_character == "_": # punctuation
+            symbol.type = self.UNDERSCORE
+            self.advance()
+        elif self.current_character == "": # end of file
+            symbol.type = self.EOF
+        else: # not a valid character
+            self.advance()
+        return symbol
         """Translate the next sequence of characters into a symbol."""
-        
+    
+    def skip_whitespace(self):
+    #Calls advance until the first character is not whitespace or a new line.
+        exit = 0
+        while exit == 0:
+            self.advance()
+            if self.current_character not in [" ", "/n"]:
+                exit = 1
+
+    def get_string(self):
+        string = self.current_character
+        exit = 0 
+        while exit == 0:
+            self.advance()
+            if self.current_character.isalpha():
+                string = string + self.current_character
+            else:
+                exit = 1
+        return string
+
+
+    def get_integer(self):
+        integer = self.current_character
+        exit = 0 
+        while exit == 0:
+            self.advance()
+            if self.current_character.isdigit():
+                integer = integer + self.current_character
+            else:
+                exit = 1
+        return integer
+    # As with get_string, but with digits instead of characters.
+
+    def advance(self):
+        self.current_character = self.contents[0]
+        self.contents = self.contents[1]
+        return(None)
+
