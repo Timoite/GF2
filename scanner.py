@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-import sys
-
-=======
->>>>>>> d6086a3f0a7cbbef20a6314360e29f90f260be36
 """Read the circuit definition file and translate the characters into symbols.
 
 Used in the Logic Simulator project to read the characters in the definition
@@ -13,6 +8,8 @@ Classes
 Scanner - reads definition file and translates characters into symbols.
 Symbol - encapsulates a symbol and stores its properties.
 """
+
+import sys
 
 
 class Symbol:
@@ -56,7 +53,6 @@ class Scanner:
 
     def __init__(self, path, names):
         """Open specified file and initialise reserved words and IDs."""
-<<<<<<< HEAD
         self.names = names
         try:
             self.file = open(path, 'r')
@@ -137,8 +133,6 @@ class Scanner:
         
 
         
-=======
->>>>>>> d6086a3f0a7cbbef20a6314360e29f90f260be36
 
     def get_symbol(self):
         """Translate the next sequence of characters into a symbol."""
