@@ -141,5 +141,4 @@ class Scanner:
     def advance(self):
         self.current_character = self.contents[0]
         self.contents = self.contents[1]
-        return(None)
 
