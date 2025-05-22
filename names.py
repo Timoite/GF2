@@ -40,30 +40,61 @@ class Names:
 
     def __init__(self):
         """Initialise names list."""
-        self.error_code_count = 0  # how many error codes have been declared
+        self.error_code_count = 0
+        self.names = []
+        self.names_dict = {}
 
     def unique_error_codes(self, num_error_codes):
         """Return a list of unique integer error codes."""
-        if not isinstance(num_error_codes, int):
-            raise TypeError("Expected num_error_codes to be an integer.")
+        if isinstance(num_error_codes, int) and num_error_codes < 0:
+            raise ValueError("Number of error codes must be a positive integer.")
+        elif num_error_codes < 1:
+            raise ValueError("Number of error codes must be at least 1.")
+        codes = []
+        for i in range(num_error_codes):
+            code = self.error_code_count + i
+            if code in self.names_dict:
+                raise ValueError(f"Error code {code} already exists.")
+            codes.append(code)
+        
         self.error_code_count += num_error_codes
-        return range(self.error_code_count - num_error_codes,
-                     self.error_code_count)
+        return codes
+        
 
     def query(self, name_string):
         """Return the corresponding name ID for name_string.
 
         If the name string is not present in the names list, return None.
         """
+        if name_string in self.names_dict:
+            return self.names_dict[name_string]
+        else:
+            return None
+
 
     def lookup(self, name_string_list):
         """Return a list of name IDs for each name string in name_string_list.
 
         If the name string is not present in the names list, add it.
         """
+        ids = []
+        for name_string in name_string_list:
+            if name_string in self.names_dict:
+                pass
+            else:
+                self.names_list.append(name_string)
+                self.names_dict[name_string] = len(self.names_list) - 1
+            ids.append(self.names_dict[name_string])
+        return ids
 
     def get_name_string(self, name_id):
         """Return the corresponding name string for name_id.
 
         If the name_id is not an index in the names list, return None.
         """
+        if name_id < 0 or name_id >= len(self.names_list):
+            return None
+        else:
+            return self.names_list[name_id]
+        
+
