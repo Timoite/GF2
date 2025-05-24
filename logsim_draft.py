@@ -65,7 +65,6 @@ def main(arg_list):
                 userint.command_interface()
 
     if not options:  # no option given, use the graphical user interface
-
         if len(arguments) != 0:  # wrong number of arguments
             print("Error: please do not specify a file when using the GUI\n")
             sys.exit()
