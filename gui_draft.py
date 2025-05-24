@@ -196,19 +196,10 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 GLUT.glutBitmapCharacter(font, ord(character))
 
 class Gui(wx.Frame):
-    QuitID=999
-    OpenID=998
     def __init__(self, title):
         """Initialise widgets and layout."""
         super().__init__(parent=None, title=title, size=(400, 400))
         locale = wx.Locale(wx.LANGUAGE_ENGLISH)
-        self.InitGUI()
-
-    def InitGUI(self):
-        """Creates general layout with sizers"""
-
-        # Canvas for drawing signals
-        self.canvas = MyGLCanvas(self, 0, 0)
         
         # Configure sizers for layout
         main_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
@@ -217,19 +208,22 @@ class Gui(wx.Frame):
         main_sizer.Add(upper_sizer, 0, wx.EXPAND, 0)
         main_sizer.Add(lower_sizer, 0, wx.EXPAND | wx.TOP, 10)
 
-        upper_left_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
+        io_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
         switches_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
-        upper_sizer.Add(upper_left_sizer, 2, wx.EXPAND | wx.RIGHT, 10)
+        upper_sizer.Add(io_sizer, 2, wx.EXPAND | wx.RIGHT, 10)
         upper_sizer.Add(switches_sizer, 1, wx.EXPAND, 0)
         
         fileio_sizer = wx.BoxSizer(wx.HORIZONTAL)
         run_cont_sizer = wx.BoxSizer(wx.HORIZONTAL)
         cycles_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        upper_left_sizer.Add(fileio_sizer, 1, wx.ALL | wx.CENTER, 5)
-        upper_left_sizer.Add(cycles_sizer, 1, wx.ALL | wx.CENTER, 5)
-        upper_left_sizer.Add(run_cont_sizer, 1, wx.ALL | wx.CENTER, 5)
+        io_sizer.Add(fileio_sizer, 1, wx.ALL | wx.CENTER, 5)
+        io_sizer.Add(cycles_sizer, 1, wx.ALL | wx.CENTER, 5)
+        io_sizer.Add(run_cont_sizer, 1, wx.ALL | wx.CENTER, 5)
+
 
         # Configure the widgets
+
+        # File io widgets
         open_image = wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR)
         open_button = wx.BitmapButton(self, wx.ID_ANY, open_image)
         fileio_sizer.Add(open_button, 1, wx.RIGHT, 10)
@@ -237,32 +231,59 @@ class Gui(wx.Frame):
         save_button = wx.BitmapButton(self, wx.ID_ANY, save_image)
         fileio_sizer.Add(save_button, 1)
 
+        # Cycles widgets
         text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
         cycles_sizer.Add(text, 1, wx.CENTER | wx.RIGHT, 10)
         spin = wx.SpinCtrl(self, wx.ID_ANY, '20')
         cycles_sizer.Add(spin, 0, wx.CENTER)
 
+        # Run and continue widgets
         run_button = wx.Button(self, wx.ID_ANY, "Run")
         run_cont_sizer.Add(run_button, 1, wx.CENTER | wx.RIGHT, 10)
         cont_button = wx.Button(self, wx.ID_ANY, "Continue")
         run_cont_sizer.Add(cont_button, 1, wx.CENTER)
 
-        text = wx.StaticText(self, wx.ID_ANY, "Switches:")
+        # Switches widgets
+        text = wx.StaticText(self, wx.ID_ANY, "Switches")
         switches_sizer.Add(text, 0, wx.CENTER)
+        self.AddSwitch(switches_sizer)
+
+        # Monitor widgets
+        text = wx.StaticText(self, wx.ID_ANY, "Monitors")
+        lower_sizer.Add(text, 0, wx.ALL | wx.CENTER, 10)
+        self.AddMonitor(lower_sizer)
+        add_image = wx.ArtProvider.GetBitmap(wx.ART_PLUS)
+        add_button = wx.BitmapButton(self, wx.ID_ANY, add_image)
+        lower_sizer.Add(add_button, 0, wx.ALL, 20)
+
+
+        # Bind events to widgets
+        open_button.Bind(wx.EVT_BUTTON, self.OnOpenFile)
+        # Add save option here
+
+
+        # Set screen size
+        self.SetSizeHints(500, 440)
+        self.SetSize(570, 1070)
+        self.SetSizer(main_sizer)
+        self.SetPosition((0,39))
+
+    def AddSwitch(self, sizer):
+        """Add a switch to GUI"""
         switch_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        switches_sizer.Add(switch_sizer, 0, wx.CENTER)
+        sizer.Add(switch_sizer, 0, wx.CENTER)
         text = wx.StaticText(self, wx.ID_ANY, "Switch 1")
         switch_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 5)
         switch_radiobox = wx.RadioBox(self, wx.ID_ANY, "", choices=['0','1'])
-        switch_sizer.Add(switch_radiobox, 0, wx.CENTER | wx.ALL, 10)
+        switch_sizer.Add(switch_radiobox, 0, wx.CENTER)
 
-        text = wx.StaticText(self, wx.ID_ANY, "Monitors")
-        lower_sizer.Add(text, 0, wx.ALL | wx.CENTER, 10)
-        # text = wx.StaticText(self, wx.ID_ANY, "ID:")
-        # lower_sizer.Add(text, 0, wx.LEFT, 60)
+    def AddMonitor(self, sizer):
+        """Add a monitor to GUI"""
+        # Canvas for drawing signals
+        self.canvas = MyGLCanvas(self, 0, 0)
 
         monitor_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        lower_sizer.Add(monitor_sizer, 0, wx.EXPAND, 0)
+        sizer.Add(monitor_sizer, 0, wx.EXPAND, 0)
         minus_image = wx.ArtProvider.GetBitmap(wx.ART_MINUS)
         zap_button = wx.BitmapButton(self, wx.ID_ANY, minus_image)
         choice = wx.Choice(self, choices = ["Monitor1", "Monitor2", "Monitor3"])
@@ -270,25 +291,26 @@ class Gui(wx.Frame):
         monitor_sizer.Add(choice, 0, wx.CENTER | wx.RIGHT, 15)
         monitor_sizer.Add(self.canvas, 1, wx.EXPAND | wx.ALL, 5)
 
-        add_image = wx.ArtProvider.GetBitmap(wx.ART_PLUS)
-        add_button = wx.BitmapButton(self, wx.ID_ANY, add_image)
-        lower_sizer.Add(add_button, 0, wx.ALL, 20)
+    def OnOpenFile(self, event):
+        openFileDialog= wx.FileDialog(self, "Open txt file", "", "", wildcard="TXT files (*.txt)|*.txt", style=wx.FD_OPEN+wx.FD_FILE_MUST_EXIST)
+        if openFileDialog.ShowModal() == wx.ID_CANCEL:
+            print("The user cancelled") 
+            return     # the user changed idea...
+        path=openFileDialog.GetPath()
+        print("File chosen =",path)
 
-        # Set screen size
-        self.SetSizeHints(500, 440)
-        self.SetSize(500, 440)
-        self.SetSizer(main_sizer)
+        names = None
+        devices = None
+        network = None
+        monitors = None
 
-    def OnMenu(self, event):
-        """Handle the event when the user selects a menu item."""
-        Id = event.GetId()
-        if Id == 103:
-            print("Quitting")
-            self.Close(True)
- 
-    def OnButton1(self, event):
-        """Handle the event when the user clicks button1."""
-        print ("Button 1 pressed")
+        scanner = Scanner(path, names)
+        parser = Parser(names, devices, network, monitors, scanner)
+        if parser.parse_network():
+            app = wx.App()
+            gui = Gui("Logic Simulator", path, names, devices, network,
+                      monitors)
+            app.MainLoop()
         
     def Toolbarhandler(self, event): 
         if event.GetId()==self.OpenID:
