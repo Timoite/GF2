@@ -8,7 +8,7 @@ from names import Names
 from devices import Devices
 from network import Network
 from monitors import Monitors
-from scanner import Scanner
+from scanner_original import Scanner
 from parse import Parser
 
 
@@ -197,6 +197,12 @@ class MyGLCanvas(wxcanvas.GLCanvas):
 
 class Gui(wx.Frame):
     def __init__(self, title):
+
+        self.names = None
+        self.devices = None
+        self.network = None
+        self.monitors = None
+
         """Initialise widgets and layout."""
         super().__init__(parent=None, title=title, size=(400, 400))
         locale = wx.Locale(wx.LANGUAGE_ENGLISH)
@@ -234,8 +240,8 @@ class Gui(wx.Frame):
         # Cycles widgets
         text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
         cycles_sizer.Add(text, 1, wx.CENTER | wx.RIGHT, 10)
-        spin = wx.SpinCtrl(self, wx.ID_ANY, '20')
-        cycles_sizer.Add(spin, 0, wx.CENTER)
+        self.spin = wx.SpinCtrl(self, wx.ID_ANY, '20')
+        cycles_sizer.Add(self.spin, 0, wx.CENTER)
 
         # Run and continue widgets
         run_button = wx.Button(self, wx.ID_ANY, "Run")
@@ -246,7 +252,8 @@ class Gui(wx.Frame):
         # Switches widgets
         text = wx.StaticText(self, wx.ID_ANY, "Switches")
         self.switches_sizer.Add(text, 0, wx.CENTER)
-        self.AddSwitch()
+        # self.AddSwitch("hello")
+        # self.AddSwitch("goodbye")
 
         # Monitor widgets
         text = wx.StaticText(self, wx.ID_ANY, "Monitors")
@@ -254,15 +261,15 @@ class Gui(wx.Frame):
         add_image = wx.ArtProvider.GetBitmap(wx.ART_PLUS)
         add_button = wx.BitmapButton(self, wx.ID_ANY, add_image)
         self.lower_sizer.Add(add_button, 0, wx.ALL, 20)
-        self.AddMonitor()
+        # self.AddMonitor()
 
 
         # Bind events to widgets
-        open_button.Bind(wx.EVT_BUTTON, self.OnOpenFile)
+        open_button.Bind(wx.EVT_BUTTON, self.OpenFile)
         # Add save option here
-
+        run_button.Bind(wx.EVT_BUTTON, self.Run)
+        cont_button.Bind(wx.EVT_BUTTON, self.Continue)
         add_button.Bind(wx.EVT_BUTTON, self.AddMonitor)
-
 
         # Set screen size
         self.SetSizeHints(500, 440)
@@ -270,18 +277,35 @@ class Gui(wx.Frame):
         self.SetSizer(self.main_sizer)
         self.SetPosition((0,39))
 
-    def AddSwitch(self):
+
+    def AddSwitch(self, switch_id, switch_state):
         """Add a switch to GUI"""
         switch_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.switches_sizer.Add(switch_sizer, 0, wx.CENTER)
-        text = wx.StaticText(self, wx.ID_ANY, "Switch 1")
+        self.switches_sizer.Add(switch_sizer, 0, wx.CENTER | wx.ALL, 5)
+        text = wx.StaticText(self, wx.ID_ANY, switch_id)
         switch_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 5)
         switch_radiobox = wx.RadioBox(self, wx.ID_ANY, "", choices=['0','1'])
+        switch_radiobox.SetSelection(switch_state)
         switch_sizer.Add(switch_radiobox, 0, wx.CENTER)
+        switch_radiobox.Bind(wx.EVT_RADIOBOX, lambda evt, temp=switch_id: self.SwitchChanged(evt, temp))
         self.Layout()
 
+    def SwitchChanged(self, event, switch_id):
+        switch_state = event.GetSelection()
+        if self.devices.set_switch(switch_id, switch_state):
+            print("Successfully set switch.")
+        else:
+            print("Error! Invalid switch.")
+
+    def CreateMonitor():
+        """Create a new monitor"""
+
     def AddMonitor(self, event=None):
-        """Add a monitor to GUI"""
+        """Add a monitor that already exists to GUI"""
+        # Handle the case that no file has yet been opened
+        if not self.monitors:
+            print("Error! Could not make monitor.")
+
         # Canvas for drawing signals
         self.canvas = MyGLCanvas(self, 0, 0)
 
@@ -302,12 +326,17 @@ class Gui(wx.Frame):
         zap_button.Bind(wx.EVT_BUTTON, lambda evt, temp=pos: self.ZapMonitor(evt, temp))
 
     def ZapMonitor(self, event, pos):
-        """Remove a monitor from GUI"""
-        size = self.lower_sizer.GetChildren()[pos].DeleteWindows()
-        self.Layout()
-        
+        """Remove the specified monitor"""
+        # Remove from monitors
 
-    def OnOpenFile(self, event):
+
+        # Remove from GUI
+        self.lower_sizer.GetChildren()[pos].DeleteWindows()
+        self.Layout()
+
+
+
+    def OpenFile(self, event):
         openFileDialog= wx.FileDialog(self, "Open txt file", "", "", wildcard="TXT files (*.txt)|*.txt", style=wx.FD_OPEN+wx.FD_FILE_MUST_EXIST)
         if openFileDialog.ShowModal() == wx.ID_CANCEL:
             print("The user cancelled") 
@@ -315,12 +344,56 @@ class Gui(wx.Frame):
         path=openFileDialog.GetPath()
         print("File chosen =",path)
 
-        names = None
-        devices = None
-        network = None
-        monitors = None
+        # Initialise instances of the four inner simulator classes
+        self.names = Names()
+        self.devices = Devices(self.names)
+        self.network = Network(self.names, self.devices)
+        self.monitors = Monitors(self.names, self.devices, self.network)
 
-        scanner = Scanner(path, names)
-        parser = Parser(names, devices, network, monitors, scanner)
+        scanner = Scanner(path, self.names)
+        parser = Parser(self.names, self.devices, self.network, self.monitors, scanner)
         if parser.parse_network():
             print("File parsed sucessfully")
+
+        switch_ids = self.devices.find_devices(self.devices.SWITCH)
+        for switch_id in switch_ids:
+            switch = self.devices.get_device(switch_id)
+            switch_state = switch.switch_state
+            self.AddSwitch(switch_id, switch_state)
+
+    def run_network(self, cycles):
+        """Run the network for the specified number of simulation cycles.
+
+        Return True if successful.
+        """
+        for _ in range(cycles):
+            if self.network.execute_network():
+                self.monitors.record_signals()
+            else:
+                print("Error! Network oscillating.")
+                return False
+        # TODO output onto canvas
+        self.monitors.display_signals()
+        return True
+
+    def Run(self, event):
+        """Run the simulation from scratch."""
+        self.cycles_completed = 0
+        cycles = self.spin.GetValue()
+        if cycles is not None:  # if the number of cycles provided is valid
+            self.monitors.reset_monitors()
+            print("".join(["Running for ", str(cycles), " cycles"]))
+            self.devices.cold_startup()
+            if self.run_network(cycles):
+                self.cycles_completed += cycles
+
+    def Continue(self):
+        """Continue a previously run simulation."""
+        cycles = self.spin.GetValue()
+        if cycles is not None:  # if the number of cycles provided is valid
+            if self.cycles_completed == 0:
+                print("Error! Nothing to continue. Run first.")
+            elif self.run_network(cycles):
+                self.cycles_completed += cycles
+                print(" ".join(["Continuing for", str(cycles), "cycles.",
+                                "Total:", str(self.cycles_completed)]))
