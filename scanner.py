@@ -53,6 +53,24 @@ class Scanner:
 
     def __init__(self, path, names):
         """Open specified file and initialise reserved words and IDs."""
+
+        self.names = names
+
+        self.symbol_type_list = [self.KEYWORD, self.STRING, self.INTEGER,
+                                  self.COMMA, self.ARROW, self.EQUALS, self.SLASH, self.DASH, self.UNDERSCORE]
+        self.keywords_list = ["DEVICES", "CONNECTIONS", "MONITORS", "CLOCK", 
+                             "SWITCH", "AND", "NAND", "OR", "NOR", "XOR", "DTYPE"]
+        
+        # Look up ID from names
+        # [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.END_ID] = self.names.lookup(self.keywords_list)
+        [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.CLOCK_ID,
+         self.SWITCH_ID, self.AND_ID, self.NAND_ID, self.OR_ID, self.NOR_ID,
+         self.XOR_ID, self.DTYPE_ID] = self.names.lookup(self.keywords_list)
+        
+        # Initialize character reading
+        self.current_character = ""
+
+        # Checks file handling error
         print("\nNow opening file...")
         print("Path: " + path)
         try:
@@ -61,64 +79,27 @@ class Scanner:
             print("Error: file not found.")
         self.contents = file.read()
         file.close()
-        self.names = names
-        self.symbol_type_list = [self.KEYWORD, self.STRING, self.INTEGER,
-                                  self.COMMA, self.ARROW, self.EQUALS, self.SLASH, self.DASH, self.UNDERSCORE]
-        self.keywords_list = ["DEVICES", "CONNECTIONS", "MONITORS"]
-        [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.END_ID] = self.names.lookup(self.keywords_list)
-        self.current_character = ""
-
-    def get_symbol(self):
-        symbol = Symbol()
-        self.skip_whitespace()
-        if self.current_character.isalpha(): # string
-            string = self.get_string()
-            if string in self.keywords_list:
-                symbol.type = self.KEYWORD
-            else:
-                symbol.type = self.STRING
-            symbol.id = self.names.lookup(string)
-        elif self.current_character.isdigit(): # integer
-            symbol.id = self.get_integer()
-            symbol.type = self.INTEGER
-        elif self.current_character == "=": # punctuation
-            symbol.type = self.EQUALS
-            self.advance()
-        elif self.current_character == "-": # punctuation
-            symbol.type = self.DASH
-            self.advance()
-        elif self.current_character == "/": # punctuation
-            symbol.type = self.SLASH
-            self.advance()
-        elif self.current_character == ",": # punctuation
-            symbol.type = self.COMMA
-            self.advance()
-        elif self.current_character == ">": # punctuation
-            symbol.type = self.ARROW
-            self.advance()
-        elif self.current_character == "_": # punctuation
-            symbol.type = self.UNDERSCORE
-            self.advance()
-        elif self.current_character == "": # end of file
-            symbol.type = self.EOF
-        else: # not a valid character
-            self.advance()
-        return symbol
-        """Translate the next sequence of characters into a symbol."""
     
-    def skip_whitespace(self):
-    #Calls advance until the first character is not whitespace or a new line.
+    def _skip_whitespace(self):
+        """Calls _advance until the first character is not whitespace or a new line."""
         exit = 0
         while exit == 0:
-            self.advance()
+            self._advance()
             if self.current_character not in [" ", "/n"]:
                 exit = 1
 
-    def get_string(self):
+    # allow comment handling (WIP)
+    def _skip_comment(self):
+        """Skip comment line that starts with #."""
+        if self.current_character == '#':
+            while self.current_character not in ['\n', '\r', '']:
+                self._advance()
+
+    def _get_string(self):
         string = self.current_character
         exit = 0 
         while exit == 0:
-            self.advance()
+            self._advance()
             if self.current_character.isalpha():
                 string = string + self.current_character
             else:
@@ -126,20 +107,69 @@ class Scanner:
         return string
 
 
-    def get_integer(self):
+    def _get_integer(self):
         integer = self.current_character
         exit = 0 
         while exit == 0:
-            self.advance()
+            self._advance()
             if self.current_character.isdigit():
                 integer = integer + self.current_character
             else:
                 exit = 1
         return integer
-    # As with get_string, but with digits instead of characters.
+    # As with _get_string, but with digits instead of characters.
 
-    def advance(self):
+    def _advance(self):
+        '''Read the next character from the input file.'''
         self.current_character = self.contents[0]
         self.contents = self.contents[1]
         return(None)
+
+    def get_symbol(self):
+        """Translate the next sequence of characters into a symbol."""
+        symbol = Symbol()
+        self._skip_whitespace()
+
+        # we also need a comment handling if we allow comment 
+        self._skip_comment
+
+        self._skip_whitespace()
+
+        if self.current_character.isalpha(): # string
+            string = self._get_string()
+            if string in self.keywords_list:
+                symbol.type = self.KEYWORD
+            else:
+                symbol.type = self.STRING
+            symbol.id = self.names.lookup(string)
+        elif self.current_character.isdigit(): # integer
+            symbol.id = self._get_integer()
+            symbol.type = self.INTEGER
+        elif self.current_character == "=": # punctuation
+            symbol.type = self.EQUALS
+            self._advance()
+        elif self.current_character == "-": # punctuation
+            symbol.type = self.DASH
+            self._advance()
+        elif self.current_character == "/": # punctuation
+            symbol.type = self.SLASH
+            self._advance()
+        elif self.current_character == ",": # punctuation
+            symbol.type = self.COMMA
+            self._advance()
+        elif self.current_character == ">": # punctuation
+            symbol.type = self.ARROW
+            self._advance()
+        elif self.current_character == "_": # punctuation
+            symbol.type = self.UNDERSCORE
+            self._advance()
+        elif self.current_character == "": # end of file
+            symbol.type = self.EOF
+        else: # not a valid character
+            self._advance()
+            # Recursively call another one?
+            return self.get_symbol()
+        
+        return symbol
+
 
