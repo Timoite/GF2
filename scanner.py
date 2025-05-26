@@ -171,5 +171,3 @@ class Scanner:
             return self.get_symbol()
         
         return symbol
-
-
