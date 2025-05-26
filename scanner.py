@@ -62,15 +62,19 @@ class Scanner:
         self.contents = file.read()
         file.close()
         self.names = names
-        self.symbol_type_list = [self.KEYWORD, self.STRING, self.INTEGER,
+        self.symbol_type_list = [self.KEYWORD, self.DEVICE_TYPE, self.STRING, self.INTEGER,
                                   self.COMMA, self.ARROW, self.EQUALS, self.SLASH, self.DASH, self.UNDERSCORE]
         self.keywords_list = ["DEVICES", "CONNECTIONS", "MONITORS"]
+        self.device_list = ["AND", "OR", "NAND", "NOR", "CLOCK", "SWITCH", "DTYPE"]
         [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.END_ID] = self.names.lookup(self.keywords_list)
+        [self.AND_ID, self.OR_ID, self.NAND_ID, self.NOR_ID, self.CLOCK_ID, self.SWITCH_ID, self.DTYPE_ID] = self.names.lookup(self.device_list)
         self.current_character = ""
 
     def get_symbol(self):
         symbol = Symbol()
         self.skip_whitespace()
+        if self.current_character == "#": # comment identifier
+            self.skip_comment()
         if self.current_character.isalpha(): # string
             string = self.get_string()
             if string in self.keywords_list:
@@ -97,9 +101,6 @@ class Scanner:
             symbol.type = self.ARROW
             self.advance()
         elif self.current_character == "_":
-            symbol.type = self.UNDERSCORE
-            self.advance()
-        elif self.current_character == "#": # comment identifier
             symbol.type = self.UNDERSCORE
             self.advance()
         elif self.current_character == "": # end of file
