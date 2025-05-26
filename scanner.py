@@ -84,19 +84,22 @@ class Scanner:
         elif self.current_character == "=": # punctuation
             symbol.type = self.EQUALS
             self.advance()
-        elif self.current_character == "-": # punctuation
+        elif self.current_character == "-":
             symbol.type = self.DASH
             self.advance()
-        elif self.current_character == "/": # punctuation
+        elif self.current_character == "/":
             symbol.type = self.SLASH
             self.advance()
-        elif self.current_character == ",": # punctuation
+        elif self.current_character == ",":
             symbol.type = self.COMMA
             self.advance()
-        elif self.current_character == ">": # punctuation
+        elif self.current_character == ">":
             symbol.type = self.ARROW
             self.advance()
-        elif self.current_character == "_": # punctuation
+        elif self.current_character == "_":
+            symbol.type = self.UNDERSCORE
+            self.advance()
+        elif self.current_character == "#": # comment identifier
             symbol.type = self.UNDERSCORE
             self.advance()
         elif self.current_character == "": # end of file
@@ -114,12 +117,22 @@ class Scanner:
             if self.current_character not in [" ", "/n"]:
                 exit = 1
 
+    def skip_comment(self):
+        exit = 0
+        while exit == 0:
+            self.advance()
+            if self.current_character == "#":
+                self.advance()
+                exit = 1
+
     def get_string(self):
         string = self.current_character
         exit = 0 
         while exit == 0:
             self.advance()
-            if self.current_character.isalpha():
+            if self.current_character == "#":
+                self.skip_comment()
+            elif self.current_character.isalpha():
                 string = string + self.current_character
             else:
                 exit = 1
@@ -131,7 +144,9 @@ class Scanner:
         exit = 0 
         while exit == 0:
             self.advance()
-            if self.current_character.isdigit():
+            if self.current_character == "#":
+                self.skip_comment()
+            elif self.current_character.isdigit():
                 integer = integer + self.current_character
             else:
                 exit = 1
