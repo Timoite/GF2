@@ -13,6 +13,7 @@ from parse import Parser
 
 
 class MyGLCanvas(wxcanvas.GLCanvas):
+    instances = []
     """Handle all drawing operations.
 
     This class contains functions for drawing onto the canvas. It
@@ -40,8 +41,10 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                                            operations.
     """
 
-    def __init__(self, parent, devices, monitors):
+    def __init__(self, parent, monitor_name):
         """Initialise canvas properties and useful variables."""
+        self.monitor_name = monitor_name
+        MyGLCanvas.instances.append(self)
         super().__init__(parent, -1,
                          attribList=[wxcanvas.WX_GL_RGBA,
                                      wxcanvas.WX_GL_DOUBLEBUFFER,
@@ -49,20 +52,6 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GLUT.glutInit()
         self.init = False
         self.context = wxcanvas.GLContext(self)
-
-        # Initialise variables for panning
-        self.pan_x = 0
-        self.pan_y = 0
-        self.last_mouse_x = 0  # previous mouse x position
-        self.last_mouse_y = 0  # previous mouse y position
-
-        # Initialise variables for zooming
-        self.zoom = 1
-
-        # Bind events to the canvas
-        self.Bind(wx.EVT_PAINT, self.on_paint)
-        self.Bind(wx.EVT_SIZE, self.on_size)
-        self.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse)
 
     def init_gl(self):
         """Configure and initialise the OpenGL context."""
@@ -79,7 +68,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GL.glTranslated(self.pan_x, self.pan_y, 0.0)
         GL.glScaled(self.zoom, self.zoom, self.zoom)
 
-    def render(self, text):
+    def render(self, monitors_dictionary, devices):
         """Handle all drawing operations."""
         self.SetCurrent(self.context)
         if not self.init:
@@ -90,21 +79,37 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         # Clear everything
         GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 
-        # Draw specified text at position (10, 10)
-        self.render_text(text, 10, 10)
+        # Get values to draw
+        [device_id, output_id] = self.devices.get_signal_ids(self.monitor_name)
+        signal_list = monitors_dictionary[(device_id, output_id)]
 
         # Draw a sample signal trace
         GL.glColor3f(0.0, 0.0, 1.0)  # signal trace is blue
         GL.glBegin(GL.GL_LINE_STRIP)
-        for i in range(10):
+        i = 0
+        y_HIGH = 40
+        y_LOW = 20
+        for signal in signal_list:
             x = (i * 20) + 10
             x_next = (i * 20) + 30
-            if i % 2 == 0:
-                y = 75
-            else:
-                y = 100
+            if signal == devices.HIGH:
+                y = y_HIGH
+                y_next = y_HIGH
+            if signal == devices.LOW:
+                y = y_LOW
+                y_next = y_LOW
+            if signal == devices.RISING:
+                y = y_LOW
+                y_next = y_HIGH
+            if signal == devices.FALLING:
+                y = y_HIGH
+                y_next = y_LOW
+            if signal == devices.BLANK:
+                i += 1
+                continue
             GL.glVertex2f(x, y)
-            GL.glVertex2f(x_next, y)
+            GL.glVertex2f(x_next, y_next)
+            i += 1
         GL.glEnd()
 
         # We have been drawing to the back buffer, flush the graphics pipeline
@@ -112,88 +117,6 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GL.glFlush()
         self.SwapBuffers()
 
-    def on_paint(self, event):
-        """Handle the paint event."""
-        self.SetCurrent(self.context)
-        if not self.init:
-            # Configure the viewport, modelview and projection matrices
-            self.init_gl()
-            self.init = True
-
-        size = self.GetClientSize()
-        text = "".join(["Canvas redrawn on paint event, size is ",
-                        str(size.width), ", ", str(size.height)])
-        self.render(text)
-
-    def on_size(self, event):
-        """Handle the canvas resize event."""
-        # Forces reconfiguration of the viewport, modelview and projection
-        # matrices on the next paint event
-        self.init = False
-
-    def on_mouse(self, event):
-        """Handle mouse events."""
-        text = ""
-        # Calculate object coordinates of the mouse position
-        size = self.GetClientSize()
-        ox = (event.GetX() - self.pan_x) / self.zoom
-        oy = (size.height - event.GetY() - self.pan_y) / self.zoom
-        old_zoom = self.zoom
-        if event.ButtonDown():
-            self.last_mouse_x = event.GetX()
-            self.last_mouse_y = event.GetY()
-            text = "".join(["Mouse button pressed at: ", str(event.GetX()),
-                            ", ", str(event.GetY())])
-        if event.ButtonUp():
-            text = "".join(["Mouse button released at: ", str(event.GetX()),
-                            ", ", str(event.GetY())])
-        if event.Leaving():
-            text = "".join(["Mouse left canvas at: ", str(event.GetX()),
-                            ", ", str(event.GetY())])
-        if event.Dragging():
-            self.pan_x += event.GetX() - self.last_mouse_x
-            self.pan_y -= event.GetY() - self.last_mouse_y
-            self.last_mouse_x = event.GetX()
-            self.last_mouse_y = event.GetY()
-            self.init = False
-            text = "".join(["Mouse dragged to: ", str(event.GetX()),
-                            ", ", str(event.GetY()), ". Pan is now: ",
-                            str(self.pan_x), ", ", str(self.pan_y)])
-        if event.GetWheelRotation() < 0:
-            self.zoom *= (1.0 + (
-                event.GetWheelRotation() / (20 * event.GetWheelDelta())))
-            # Adjust pan so as to zoom around the mouse position
-            self.pan_x -= (self.zoom - old_zoom) * ox
-            self.pan_y -= (self.zoom - old_zoom) * oy
-            self.init = False
-            text = "".join(["Negative mouse wheel rotation. Zoom is now: ",
-                            str(self.zoom)])
-        if event.GetWheelRotation() > 0:
-            self.zoom /= (1.0 - (
-                event.GetWheelRotation() / (20 * event.GetWheelDelta())))
-            # Adjust pan so as to zoom around the mouse position
-            self.pan_x -= (self.zoom - old_zoom) * ox
-            self.pan_y -= (self.zoom - old_zoom) * oy
-            self.init = False
-            text = "".join(["Positive mouse wheel rotation. Zoom is now: ",
-                            str(self.zoom)])
-        if text:
-            self.render(text)
-        else:
-            self.Refresh()  # triggers the paint event
-
-    def render_text(self, text, x_pos, y_pos):
-        """Handle text drawing operations."""
-        GL.glColor3f(0.0, 0.0, 0.0)  # text is black
-        GL.glRasterPos2f(x_pos, y_pos)
-        font = GLUT.GLUT_BITMAP_HELVETICA_12
-
-        for character in text:
-            if character == '\n':
-                y_pos = y_pos - 20
-                GL.glRasterPos2f(x_pos, y_pos)
-            else:
-                GLUT.glutBitmapCharacter(font, ord(character))
 
 class Gui(wx.Frame):
     def __init__(self, title):
@@ -202,6 +125,7 @@ class Gui(wx.Frame):
         self.devices = None
         self.network = None
         self.monitors = None
+        self.cycles_completed = 0
 
         """Initialise widgets and layout."""
         super().__init__(parent=None, title=title, size=(400, 400))
@@ -233,9 +157,9 @@ class Gui(wx.Frame):
         open_image = wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR)
         open_button = wx.BitmapButton(self, wx.ID_ANY, open_image)
         fileio_sizer.Add(open_button, 1, wx.RIGHT, 10)
-        save_image = wx.ArtProvider.GetBitmap(wx.ART_FILE_SAVE, wx.ART_TOOLBAR)
-        save_button = wx.BitmapButton(self, wx.ID_ANY, save_image)
-        fileio_sizer.Add(save_button, 1)
+        # save_image = wx.ArtProvider.GetBitmap(wx.ART_FILE_SAVE, wx.ART_TOOLBAR)
+        # save_button = wx.BitmapButton(self, wx.ID_ANY, save_image)
+        # fileio_sizer.Add(save_button, 1)
 
         # Cycles widgets
         text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
@@ -258,25 +182,27 @@ class Gui(wx.Frame):
         # Monitor widgets
         text = wx.StaticText(self, wx.ID_ANY, "Monitors")
         self.lower_sizer.Add(text, 0, wx.ALL | wx.CENTER, 10)
+        self.add_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.lower_sizer.Add(self.add_sizer, wx.CENTER)
         add_image = wx.ArtProvider.GetBitmap(wx.ART_PLUS)
         add_button = wx.BitmapButton(self, wx.ID_ANY, add_image)
-        self.lower_sizer.Add(add_button, 0, wx.ALL, 20)
+        self.choice = wx.Choice(self, choices = [])
+        self.add_sizer.Add(add_button, 0, wx.ALL, 20)
+        self.add_sizer.Add(self.choice, 0, wx.CENTER | wx.RIGHT, 15)
         # self.AddMonitor()
 
 
         # Bind events to widgets
         open_button.Bind(wx.EVT_BUTTON, self.OpenFile)
-        # Add save option here
         run_button.Bind(wx.EVT_BUTTON, self.Run)
         cont_button.Bind(wx.EVT_BUTTON, self.Continue)
-        add_button.Bind(wx.EVT_BUTTON, self.AddMonitor)
+        add_button.Bind(wx.EVT_BUTTON, self.CreateMonitor)
 
         # Set screen size
         self.SetSizeHints(500, 440)
         self.SetSize(570, 1070)
         self.SetSizer(self.main_sizer)
         self.SetPosition((0,39))
-
 
     def AddSwitch(self, switch_id, switch_state):
         """Add a switch to GUI"""
@@ -297,17 +223,44 @@ class Gui(wx.Frame):
         else:
             print("Error! Invalid switch.")
 
-    def CreateMonitor():
+    def CreateMonitor(self, event):
         """Create a new monitor"""
-
-    def AddMonitor(self, event=None):
-        """Add a monitor that already exists to GUI"""
         # Handle the case that no file has yet been opened
         if not self.monitors:
-            print("Error! Could not make monitor.")
+            print("Error! Please open file before creating monitor.")
+            return
+        
+        signal_int = self.choice.GetSelection()
+        signal_name = self.all_signal_list[signal_int]
+
+        """Add the specified signal to the monitors dictionary.
+
+        Return NO_ERROR if successful, or the corresponding error if not.
+        """
+        [device_id, output_id] = self.devices.get_signal_ids(signal_name)
+        monitor_device = self.devices.get_device(device_id)
+        if monitor_device is None:
+            return self.network.DEVICE_ABSENT
+        elif output_id not in monitor_device.outputs:
+            return self.monitors.NOT_OUTPUT
+        elif (device_id, output_id) in self.monitors.monitors_dictionary:
+            return self.monitors.MONITOR_PRESENT
+        else:
+            # If n simulation cycles have been completed before making this
+            # monitor, then initialise the signal trace with an n-length list
+            # of BLANK signals. Otherwise, initialise the trace with an empty
+            # list.
+            self.monitors.monitors_dictionary[(device_id, output_id)] = [
+                self.devices.BLANK] * self.cycles_completed
+            # add to gui
+            self.AddMonitor(signal_name)
+            return self.NO_ERROR
+
+    def AddMonitor(self, signal_name):
+        """Add a monitor that already exists to GUI"""
 
         # Canvas for drawing signals
-        self.canvas = MyGLCanvas(self, 0, 0)
+        self.canvas = MyGLCanvas(self, signal_name)
 
         monitor_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
@@ -317,23 +270,26 @@ class Gui(wx.Frame):
         self.lower_sizer.Insert(pos, monitor_sizer, 0, wx.EXPAND, 0, id)
         minus_image = wx.ArtProvider.GetBitmap(wx.ART_MINUS)
         zap_button = wx.BitmapButton(self, wx.ID_ANY, minus_image)
-        choice = wx.Choice(self, choices = ["Monitor1", "Monitor2", "Monitor3"])
+        text = wx.StaticText(self, wx.ID_ANY, signal_name)
         monitor_sizer.Add(zap_button, 0, wx.ALL, 20)
-        monitor_sizer.Add(choice, 0, wx.CENTER | wx.RIGHT, 15)
+        monitor_sizer.Add(text, 1, wx.CENTER | wx.RIGHT, 10)
         monitor_sizer.Add(self.canvas, 1, wx.EXPAND | wx.ALL, 5)
         self.Layout()
 
-        zap_button.Bind(wx.EVT_BUTTON, lambda evt, temp=pos: self.ZapMonitor(evt, temp))
+        zap_button.Bind(wx.EVT_BUTTON, lambda evt, temp=pos, temp2=signal_name: self.ZapMonitor(evt, temp, temp2))
 
-    def ZapMonitor(self, event, pos):
+
+    def ZapMonitor(self, event, pos, signal_name):
         """Remove the specified monitor"""
         # Remove from monitors
-
-
-        # Remove from GUI
-        self.lower_sizer.GetChildren()[pos].DeleteWindows()
-        self.Layout()
-
+        [device, port] = self.devices.get_signal_ids(signal_name)
+        if self.monitors.remove_monitor(device, port):
+            # Remove from GUI
+            self.lower_sizer.GetChildren()[pos].DeleteWindows()
+            self.Layout()
+            print("Successfully zapped monitor")
+        else:
+            print("Error! Could not zap monitor.")
 
 
     def OpenFile(self, event):
@@ -361,6 +317,15 @@ class Gui(wx.Frame):
             switch_state = switch.switch_state
             self.AddSwitch(switch_id, switch_state)
 
+        [monitored_signal_list, non_monitored_signal_list] = self.monitors.get_signal_names()
+        self.all_signal_list = monitored_signal_list + non_monitored_signal_list
+
+        self.choice.SetItems(self.all_signal_list)
+
+        for monitored_signal_name in monitored_signal_list:
+            self.AddMonitor(monitored_signal_name)
+
+
     def run_network(self, cycles):
         """Run the network for the specified number of simulation cycles.
 
@@ -372,12 +337,21 @@ class Gui(wx.Frame):
             else:
                 print("Error! Network oscillating.")
                 return False
-        # TODO output onto canvas
-        self.monitors.display_signals()
+        
+        for canvas in MyGLCanvas.instances:
+            canvas.render(self.monitors.monitors_dictionary, self.devices)
+
+
+            
         return True
 
     def Run(self, event):
         """Run the simulation from scratch."""
+        # Handle the case that no file has yet been opened
+        if not self.monitors:
+            print("Error! Please open file before running.")
+            return
+        
         self.cycles_completed = 0
         cycles = self.spin.GetValue()
         if cycles is not None:  # if the number of cycles provided is valid
@@ -387,8 +361,13 @@ class Gui(wx.Frame):
             if self.run_network(cycles):
                 self.cycles_completed += cycles
 
-    def Continue(self):
+    def Continue(self, event):
         """Continue a previously run simulation."""
+        # Handle the case that no file has yet been opened
+        if not self.monitors:
+            print("Error! Please open file before continuing.")
+            return
+        
         cycles = self.spin.GetValue()
         if cycles is not None:  # if the number of cycles provided is valid
             if self.cycles_completed == 0:
