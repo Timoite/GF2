@@ -89,6 +89,7 @@ class Scanner:
         self.current_character = ""
 
     def get_symbol(self):
+        """Translate the next sequence of characters into a symbol."""
         symbol = Symbol()
         self.skip_whitespace()
         if self.current_character == "#": # comment identifier
@@ -126,7 +127,7 @@ class Scanner:
         else: # not a valid character
             self.advance()
         return symbol
-        """Translate the next sequence of characters into a symbol."""
+        
     
     def _skip_whitespace(self):
         """Calls _advance until the first character is not whitespace or a new line."""
