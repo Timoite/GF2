@@ -79,6 +79,54 @@ class Scanner:
             print("Error: file not found.")
         self.contents = file.read()
         file.close()
+        self.names = names
+        self.symbol_type_list = [self.KEYWORD, self.DEVICE_TYPE, self.STRING, self.INTEGER,
+                                  self.COMMA, self.ARROW, self.EQUALS, self.SLASH, self.DASH, self.UNDERSCORE]
+        self.keywords_list = ["DEVICES", "CONNECTIONS", "MONITORS"]
+        self.device_list = ["AND", "OR", "NAND", "NOR", "CLOCK", "SWITCH", "DTYPE"]
+        [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.END_ID] = self.names.lookup(self.keywords_list)
+        [self.AND_ID, self.OR_ID, self.NAND_ID, self.NOR_ID, self.CLOCK_ID, self.SWITCH_ID, self.DTYPE_ID] = self.names.lookup(self.device_list)
+        self.current_character = ""
+
+    def get_symbol(self):
+        symbol = Symbol()
+        self.skip_whitespace()
+        if self.current_character == "#": # comment identifier
+            self.skip_comment()
+        if self.current_character.isalpha(): # string
+            string = self.get_string()
+            if string in self.keywords_list:
+                symbol.type = self.KEYWORD
+            else:
+                symbol.type = self.STRING
+            symbol.id = self.names.lookup(string)
+        elif self.current_character.isdigit(): # integer
+            symbol.id = self.get_integer()
+            symbol.type = self.INTEGER
+        elif self.current_character == "=": # punctuation
+            symbol.type = self.EQUALS
+            self.advance()
+        elif self.current_character == "-":
+            symbol.type = self.DASH
+            self.advance()
+        elif self.current_character == "/":
+            symbol.type = self.SLASH
+            self.advance()
+        elif self.current_character == ",":
+            symbol.type = self.COMMA
+            self.advance()
+        elif self.current_character == ">":
+            symbol.type = self.ARROW
+            self.advance()
+        elif self.current_character == "_":
+            symbol.type = self.UNDERSCORE
+            self.advance()
+        elif self.current_character == "": # end of file
+            symbol.type = self.EOF
+        else: # not a valid character
+            self.advance()
+        return symbol
+        """Translate the next sequence of characters into a symbol."""
     
     def _skip_whitespace(self):
         """Calls _advance until the first character is not whitespace or a new line."""
@@ -88,24 +136,22 @@ class Scanner:
             if self.current_character not in [" ", "/n"]:
                 exit = 1
 
-    # allow comment handling (WIP)
-    def _skip_comment(self):
-        """Skip comment line that starts with #."""
-        if self.current_character == '#':
-            while self.current_character not in ['\n', '\r', '']:
-                self._advance()
+    def skip_comment(self):
+        exit = 0
+        while exit == 0:
+            self.advance()
+            if self.current_character == "#":
+                self.advance()
+                exit = 1
 
-    def _get_string(self):
-        """_summary_
-
-        Returns:
-            _type_: _description_
-        """
+    def get_string(self):
         string = self.current_character
         exit = 0 
         while exit == 0:
-            self._advance()
-            if self.current_character.isalpha():
+            self.advance()
+            if self.current_character == "#":
+                self.skip_comment()
+            elif self.current_character.isalpha():
                 string = string + self.current_character
             else:
                 exit = 1
@@ -121,8 +167,10 @@ class Scanner:
         integer = self.current_character
         exit = 0 
         while exit == 0:
-            self._advance()
-            if self.current_character.isdigit():
+            self.advance()
+            if self.current_character == "#":
+                self.skip_comment()
+            elif self.current_character.isdigit():
                 integer = integer + self.current_character
             else:
                 exit = 1
@@ -133,7 +181,6 @@ class Scanner:
         '''Read the next character from the input file.'''
         self.current_character = self.contents[0]
         self.contents = self.contents[1]
-        return(None)
 
     def get_symbol(self):
         """Translate the next sequence of characters into a symbol."""
