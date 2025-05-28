@@ -36,16 +36,16 @@ class Parser:
     def __init__(self, names, devices, network, monitors, scanner):
         """Initialise constants."""
 
-    def _deviceID(self):
-        deviceID = ""
+    def _name(self):
+        name = ""
         while (self.symbol.type == self.scanner.STRING or self.symbol.type == self.scanner.INTEGER
                 or self.symbol.type == self.scanner.UNDERSCORE):
-            deviceID = deviceID + self.symbol.id
+            name = name + self.symbol.id
             self.symbol = self.scanner.get_symbol()
         if not (self.symbol.type == self.scanner.EQUALS or self.symbol.type == self.scanner.DASH):
             self._error()
         else:
-            return deviceID
+            return name
         
     def _portID(self):
         portID = ""
@@ -63,7 +63,7 @@ class Parser:
             self._error()
 
     def _signalID(self):
-        deviceID = self._deviceID()
+        deviceID = self._name()
         if self.symbol.type == self.scanner.DASH:
             self.symbol = self.scanner.get_symbol()
             portID = self._portID()
@@ -73,9 +73,55 @@ class Parser:
                 self._error()
             else:
                 return [deviceID, ""] #Not quite sure what this needs to be yet?
+            
+    def _devicetype(self):
+        if self.symbol.type == self.scanner.DEVICE_TYPE:
+            devicetype = self.symbol.id
+            self.symbol = self.scanner.get_symbol()
+            return devicetype
+        else:
+            self._error()
+    
+    def _device(self):
+        deviceID = self._name()
+        if self.symbol.type == self.scanner.EQUALS:
+            self.symbol = self.scanner.get_symbol()
+            device = self._devicetype()
+            if self.symbol.type == self.scanner.SLASH:
+                self.symbol = self.scanner.get_symbol()
+                if self.symbol.type == self.scanner.INTEGER:
+                    qualifier = self.symbol.ID()
+                    self.symbol = self.scanner.get_symbol()
+                else:
+                    self.error()
+            elif self.symbol.type == self.scanner.COMMA:
+                self.symbol = self.scanner.get_symbol()
+                qualifier = None
+            else:
+                self._error()
+        else:
+            self._error() 
+        if self.error_found == 0:
+            error_type = self._make_device(device, deviceID, qualifier)
+            if error_type != self.devices.NO_ERROR():
+                self._error()
+
+    def _make_device(self, device, deviceID, qualifier):
+        if device in ["AND", "OR", "NAND", "NOR", "XOR"]:
+            error = self.devices.make_gate(deviceID, device, qualifier)
+        elif device == "CLOCK":
+            error = self.devices.make_clock(deviceID, qualifier)
+        elif device == "SWITCH":
+            error = self.devices.make_clock(deviceID, qualifier)
+        elif device == "DTYPE":
+            error = self.devices.make_d_type(deviceID)
+        else:
+            error = self.error()
+        return error
+    
 
     def _connection(self):
-        self._connectionID()
+        connectionID = self._name()
         if self.symbol.type == self.scanner.EQUALS:
             self.symbol = self.scanner.get_symbol()
             signal1 = self._signalID()
@@ -90,7 +136,30 @@ class Parser:
             error_type = self.network.make_connection(signal1[0], signal1[1], signal2[0], signal2[1])
             if error_type != self.network.NO_ERROR():
                 self._error()
+    
+    def _monitor(self):
+        monitorID = self._name()
+        if self.symbol.type == self.scanner.EQUALS:
+            self.symbol = self.scanner.get_symbol()
+            port = self._signalID()
+        else:
+            self._error() 
+        if self.error_found == 0:
+            error_type = self.monitors.make_monitor(port[0], port[1])
+            if error_type != self.monitors.NO_ERROR():
+                self._error()
 
+    def _devices_list(self):
+        if (self.symbol.type == self.scanner.KEYWORD and self.symbol.id == self.scanner.DEVICES_ID):
+            self.symbol = self.scanner.get_symbol()
+            self._device()
+            while self.symbol.type == self.scanner.COMMA:
+                self.symbol = self.scanner.get_symbol()
+                self._device()
+            if not self.symbol.type == self.scanner.KEYWORD:
+                self._error()
+        else:
+            self._error()
 
     def _connection_list(self):
         if (self.symbol.type == self.scanner.KEYWORD and self.symbol.id == self.scanner.CONNECTIONS_ID):
@@ -103,10 +172,22 @@ class Parser:
                 self._error()
         else:
             self._error()
-                
+
+    def _monitors_list(self):
+        if (self.symbol.type == self.scanner.KEYWORD and self.symbol.id == self.scanner.MONITORS_ID):
+            self.symbol = self.scanner.get_symbol()
+            self._monitor()
+            while self.symbol.type == self.scanner.COMMA:
+                self.symbol = self.scanner.get_symbol()
+                self._monitor()
+            if not (self.symbol.type == self.scanner.KEYWORD and self.symbol.id == self.scanner.END_ID):
+                self._error()
+        else:
+            self._error()     
     
     def parse_network(self):
         """Parse the circuit definition file."""
+        return True
         # For now just return True, so that userint and gui can run in the
         # skeleton code. When complete, should return False when there are
         # errors in the circuit definition file.
