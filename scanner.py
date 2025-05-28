@@ -71,12 +71,13 @@ class Scanner:
         self.current_character = ""
 
     def get_symbol(self):
+        """Translate the next sequence of characters into a symbol."""
         symbol = Symbol()
-        self.skip_whitespace()
+        self._skip_whitespace()
         if self.current_character == "#": # comment identifier
-            self.skip_comment()
+            self._skip_comment()
         if self.current_character.isalpha(): # string
-            string = self.get_string()
+            string = self._get_string()
             if string in self.keywords_list:
                 symbol.type = self.KEYWORD
             elif string in self.device_list:
@@ -85,56 +86,58 @@ class Scanner:
                 symbol.type = self.STRING
             symbol.id = self.names.lookup(string)
         elif self.current_character.isdigit(): # integer
-            symbol.id = self.get_integer()
+            symbol.id = self._get_integer()
             symbol.type = self.INTEGER
         elif self.current_character == "=": # punctuation
             symbol.type = self.EQUALS
-            self.advance()
+            self._advance()
         elif self.current_character == "-":
             symbol.type = self.DASH
-            self.advance()
+            self._advance()
         elif self.current_character == "/":
             symbol.type = self.SLASH
-            self.advance()
+            self._advance()
         elif self.current_character == ",":
             symbol.type = self.COMMA
-            self.advance()
+            self._advance()
         elif self.current_character == ">":
             symbol.type = self.ARROW
-            self.advance()
+            self._advance()
         elif self.current_character == "_":
             symbol.type = self.UNDERSCORE
-            self.advance()
+            self._advance()
         elif self.current_character == "": # end of file
             symbol.type = self.EOF
         else: # not a valid character
-            self.advance()
+            self._advance()
         return symbol
-        """Translate the next sequence of characters into a symbol."""
+        
     
-    def skip_whitespace(self):
-    #Calls advance until the first character is not whitespace or a new line.
+    def _skip_whitespace(self):
+        """Calls _advance until the first character is not whitespace or a new line."""
         exit = 0
         while exit == 0:
-            self.advance()
+            self._advance()
             if self.current_character not in [" ", "/n"]:
                 exit = 1
 
-    def skip_comment(self):
+    def _skip_comment(self):
+        """skip comment by detecting and remove the line starting with the comment symbol '#'"""
         exit = 0
         while exit == 0:
-            self.advance()
+            self._advance()
             if self.current_character == "#":
-                self.advance()
+                self._advance()
                 exit = 1
 
-    def get_string(self):
+    def _get_string(self):
+        """get the string (seperate by space)"""
         string = self.current_character
         exit = 0 
         while exit == 0:
-            self.advance()
+            self._advance()
             if self.current_character == "#":
-                self.skip_comment()
+                self._skip_comment()
             elif self.current_character.isalpha():
                 string = string + self.current_character
             else:
@@ -142,21 +145,22 @@ class Scanner:
         return string
 
 
-    def get_integer(self):
+    def _get_integer(self):
+        '''As with _get_string, but with digits instead of characters.'''
         integer = self.current_character
         exit = 0 
         while exit == 0:
-            self.advance()
+            self._advance()
             if self.current_character == "#":
-                self.skip_comment()
+                self._skip_comment()
             elif self.current_character.isdigit():
                 integer = integer + self.current_character
             else:
                 exit = 1
         return integer
-    # As with get_string, but with digits instead of characters.
 
-    def advance(self):
+    def _advance(self):
+        '''Used to _advance to the next character when the current character has been analyzed.'''
         self.current_character = self.contents[0]
         self.contents = self.contents[1]
 
