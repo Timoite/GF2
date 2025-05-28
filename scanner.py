@@ -96,6 +96,11 @@ class Scanner:
                 self._advance()
 
     def _get_string(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
         string = self.current_character
         exit = 0 
         while exit == 0:
@@ -108,6 +113,11 @@ class Scanner:
 
 
     def _get_integer(self):
+        """Extract the integer 
+
+        Returns:
+            _type_: _description_
+        """
         integer = self.current_character
         exit = 0 
         while exit == 0:
@@ -171,3 +181,5 @@ class Scanner:
             return self.get_symbol()
         
         return symbol
+
+
