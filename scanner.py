@@ -85,48 +85,6 @@ class Scanner:
         [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.END_ID] = self.names.lookup(self.keywords_list)
         [self.AND_ID, self.OR_ID, self.NAND_ID, self.NOR_ID, self.CLOCK_ID, self.SWITCH_ID, self.DTYPE_ID] = self.names.lookup(self.device_list)
         self.current_character = ""
-
-    def get_symbol(self):
-        """Translate the next sequence of characters into a symbol."""
-        symbol = Symbol()
-        self._skip_whitespace()
-        if self.current_character == "#": # comment identifier
-            self._skip_comment()
-        if self.current_character.isalpha(): # string
-            string = self._get_string()
-            if string in self.keywords_list:
-                symbol.type = self.KEYWORD
-            elif string in self.device_list:
-                symbol.type = self.DEVICE_TYPE
-            else:
-                symbol.type = self.STRING
-            symbol.id = self.names.lookup(string)
-        elif self.current_character.isdigit(): # integer
-            symbol.id = self._get_integer()
-            symbol.type = self.INTEGER
-        elif self.current_character == "=": # punctuation
-            symbol.type = self.EQUALS
-            self._advance()
-        elif self.current_character == "-":
-            symbol.type = self.DASH
-            self._advance()
-        elif self.current_character == "/":
-            symbol.type = self.SLASH
-            self._advance()
-        elif self.current_character == ",":
-            symbol.type = self.COMMA
-            self._advance()
-        elif self.current_character == ">":
-            symbol.type = self.ARROW
-            self._advance()
-        elif self.current_character == "_":
-            symbol.type = self.UNDERSCORE
-            self._advance()
-        elif self.current_character == "": # end of file
-            symbol.type = self.EOF
-        else: # not a valid character
-            self._advance()
-        return symbol
         
     
     def _skip_whitespace(self):
@@ -174,6 +132,7 @@ class Scanner:
             else:
                 exit = 1
         return integer
+    # As with __get_string, but with digits instead of characters.
 
     def _advance(self):
         '''Used to _advance to the next character when the current character has been analyzed.'''
@@ -186,7 +145,7 @@ class Scanner:
         self._skip_whitespace()
 
         # we also need a comment handling if we allow comment 
-        self._skip_comment
+        self._skip_comment()
 
         self._skip_whitespace()
 
