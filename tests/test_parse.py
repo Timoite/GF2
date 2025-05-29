@@ -8,6 +8,7 @@ from monitors import Monitors
 from scanner import Scanner
 from parse import Parser
 
+@pytest.fixture
 def new_parser():
     """Return a Parser class instance."""
     new_names = Names()
