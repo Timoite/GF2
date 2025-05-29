@@ -1,5 +1,3 @@
-import sys
-
 """Read the circuit definition file and translate the characters into symbols.
 
 Used in the Logic Simulator project to read the characters in the definition
@@ -53,6 +51,24 @@ class Scanner:
 
     def __init__(self, path, names):
         """Open specified file and initialise reserved words and IDs."""
+
+        self.names = names
+
+        self.symbol_type_list = [self.KEYWORD, self.STRING, self.INTEGER,
+                                  self.COMMA, self.ARROW, self.EQUALS, self.SLASH, self.DASH, self.UNDERSCORE]
+        self.keywords_list = ["DEVICES", "CONNECTIONS", "MONITORS", "CLOCK", 
+                             "SWITCH", "AND", "NAND", "OR", "NOR", "XOR", "DTYPE"]
+        
+        # Look up ID from names
+        # [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.END_ID] = self.names.lookup(self.keywords_list)
+        [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.CLOCK_ID,
+         self.SWITCH_ID, self.AND_ID, self.NAND_ID, self.OR_ID, self.NOR_ID,
+         self.XOR_ID, self.DTYPE_ID] = self.names.lookup(self.keywords_list)
+        
+        # Initialize character reading
+        self.current_character = ""
+
+        # Checks file handling error
         print("\nNow opening file...")
         print("Path: " + path)
         try:
@@ -163,4 +179,52 @@ class Scanner:
         '''Used to _advance to the next character when the current character has been analyzed.'''
         self.current_character = self.contents[0]
         self.contents = self.contents[1]
+
+    def get_symbol(self):
+        """Translate the next sequence of characters into a symbol."""
+        symbol = Symbol()
+        self._skip_whitespace()
+
+        # we also need a comment handling if we allow comment 
+        self._skip_comment
+
+        self._skip_whitespace()
+
+        if self.current_character.isalpha(): # string
+            string = self._get_string()
+            if string in self.keywords_list:
+                symbol.type = self.KEYWORD
+            else:
+                symbol.type = self.STRING
+            symbol.id = self.names.lookup(string)
+        elif self.current_character.isdigit(): # integer
+            symbol.id = self._get_integer()
+            symbol.type = self.INTEGER
+        elif self.current_character == "=": # punctuation
+            symbol.type = self.EQUALS
+            self._advance()
+        elif self.current_character == "-": # punctuation
+            symbol.type = self.DASH
+            self._advance()
+        elif self.current_character == "/": # punctuation
+            symbol.type = self.SLASH
+            self._advance()
+        elif self.current_character == ",": # punctuation
+            symbol.type = self.COMMA
+            self._advance()
+        elif self.current_character == ">": # punctuation
+            symbol.type = self.ARROW
+            self._advance()
+        elif self.current_character == "_": # punctuation
+            symbol.type = self.UNDERSCORE
+            self._advance()
+        elif self.current_character == "": # end of file
+            symbol.type = self.EOF
+        else: # not a valid character
+            self._advance()
+            # Recursively call another one?
+            return self.get_symbol()
+        
+        return symbol
+
 
