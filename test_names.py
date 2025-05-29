@@ -10,12 +10,17 @@ def new_names():
 
 def test_unique_error_codes(new_names):
     """Test if unique_error_codes returns a list of unique error codes."""
-    assert True # Placeholder for actual unique error codes logic
+    assert new_names.unique_error_codes(3) == [0, 1, 2]
 
 def test_unique_error_codes_gives_errors(new_names):
     """Test if unique_error_codes returns the correct errors."""
     # This test would require a specific implementation of unique_error_codes
-    assert True # Placeholder for actual error handling logic
+    with pytest.raises(ValueError):
+        new_names.unique_error_codes(0)  # Assuming it raises an error for 0 codes
+    
+    with pytest.raises(ValueError):
+        new_names.unique_error_codes(-1)
+
 
 def test_query(new_names):
     """Test if query returns the correct error codes."""
