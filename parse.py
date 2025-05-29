@@ -36,6 +36,9 @@ class Parser:
     def __init__(self, names, devices, network, monitors, scanner):
         """Initialise constants."""
 
+    def _error(self, error_type, stopping_symbol):
+        self.error_count += 1
+
     def _name(self):
         name = ""
         while (self.symbol.type == self.scanner.STRING or self.symbol.type == self.scanner.INTEGER
@@ -161,7 +164,7 @@ class Parser:
         else:
             self._error()
 
-    def _connection_list(self):
+    def _connections_list(self):
         if (self.symbol.type == self.scanner.KEYWORD and self.symbol.id == self.scanner.CONNECTIONS_ID):
             self.symbol = self.scanner.get_symbol()
             self._connection()
@@ -186,8 +189,15 @@ class Parser:
             self._error()     
     
     def parse_network(self):
-        """Parse the circuit definition file."""
-        return True
+        self.error_count = 0
+        self._devices_list()
+        self._connections_list()
+        self._monitors_list()
+        if self.error_count == 0:
+            """Parse the circuit definition file."""
+            return True
+        else:
+            return False
         # For now just return True, so that userint and gui can run in the
         # skeleton code. When complete, should return False when there are
         # errors in the circuit definition file.
