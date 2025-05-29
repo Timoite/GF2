@@ -41,6 +41,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                                            operations.
     """
 
+    # Keep a record of all canvases
     instances = []
 
     def __init__(self, parent, monitor_name):
@@ -55,7 +56,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
 
         self.monitor_name = monitor_name
         self.parent = parent
-        MyGLCanvas.instances.append(self)  # Keep a record of all canvases
+        MyGLCanvas.instances.append(self)
 
         # Bind events to the canvas
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -98,8 +99,8 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 self.devices.get_signal_ids(self.monitor_name)
             signal_list = self.monitors_dictionary[(device_id, output_id)]
 
-            # Draw a sample signal trace
-            GL.glColor3f(0.0, 0.0, 1.0)  # signal trace is blue
+            # Draw signal trace
+            GL.glColor3f(1.0, 0.0, 0.0)
             GL.glBegin(GL.GL_LINE_STRIP)
             i = 0
             y_HIGH = 40
@@ -126,7 +127,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 GL.glVertex2f(x_next, y_next)
                 i += 1
             GL.glEnd()
-        except (AttributeError):  # this is the wrong error to catch
+        except (AttributeError):  # TODO this is the wrong error to catch
             pass
 
         # We have been drawing to the back buffer, flush the graphics pipeline
@@ -184,7 +185,7 @@ class ScrollableGLPanel(wx.ScrolledWindow):
 
     def on_resize(self, event):
         """Refresh scroll position when resized."""
-        virtual_size = [max(self.parent.GetSize()[0]-196,
+        virtual_size = [max(self.parent.GetSize()[0]-216,
                             (self.cycles_completed+2)*20), 60]
         self.canvas.SetSize(virtual_size)
         self.SetScrollbars(1, 1, virtual_size[0], virtual_size[1])
@@ -214,7 +215,7 @@ class Gui(wx.Frame):
         self.upper_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.lower_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
         self.main_sizer.Add(self.upper_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
-        self.main_sizer.Add(self.lower_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        self.main_sizer.Add(self.lower_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 10)
 
         self.io_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
         self.switches_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
