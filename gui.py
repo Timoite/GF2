@@ -265,7 +265,7 @@ class Gui(wx.Frame):
 
         # Monitor widgets
         text = wx.StaticText(self, wx.ID_ANY, "Monitors")
-        self.lower_sizer.Add(text, 0, wx.ALL | wx.CENTER, 10)
+        self.lower_sizer.Add(text, 1, wx.ALL | wx.CENTER, 10)
 
         self.monitors_sizer = wx.BoxSizer(wx.VERTICAL)
         self.scrolled_panel = wx.ScrolledWindow(self, style=wx.VSCROLL)
@@ -275,10 +275,10 @@ class Gui(wx.Frame):
         self.monitors_sizer.Fit(self.scrolled_panel)
 
         self.add_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.lower_sizer.Add(self.add_sizer, wx.CENTER)
+        self.monitors_sizer.Add(self.add_sizer, 0, wx.EXPAND)
         add_image = wx.ArtProvider.GetBitmap(wx.ART_PLUS)
-        add_button = wx.BitmapButton(self, wx.ID_ANY, add_image)
-        self.choice = wx.Choice(self, choices=[])
+        add_button = wx.BitmapButton(self.scrolled_panel, wx.ID_ANY, add_image)
+        self.choice = wx.Choice(self.scrolled_panel, choices=[])
         self.add_sizer.Add(add_button, 0, wx.ALL, 20)
         self.add_sizer.Add(self.choice, 0, wx.CENTER | wx.RIGHT, 15)
 
@@ -287,7 +287,7 @@ class Gui(wx.Frame):
         quit_button.Bind(wx.EVT_BUTTON, self.Quit)
         run_button.Bind(wx.EVT_BUTTON, self.Run)
         cont_button.Bind(wx.EVT_BUTTON, self.Continue)
-        add_button.Bind(wx.EVT_BUTTON, self.CreateMonitor)
+        # add_button.Bind(wx.EVT_BUTTON, self.CreateMonitor)
 
         # Set screen size
         self.SetSizeHints(500, 500)
@@ -348,9 +348,9 @@ class Gui(wx.Frame):
     def AddMonitor(self, signal_name):
         """Add a monitor that already exists to GUI."""
         monitor_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        pos = len(self.monitors_sizer.GetChildren())
+        pos = len(self.monitors_sizer.GetChildren()) - 1
 
-        self.monitors_sizer.Add(monitor_sizer, 0, wx.EXPAND, 0)
+        self.monitors_sizer.Insert(pos, monitor_sizer, 0, wx.EXPAND, 0)
         minus_image = wx.ArtProvider.GetBitmap(wx.ART_MINUS)
         zap_button = wx.BitmapButton(self.scrolled_panel, wx.ID_ANY, minus_image)
         text = wx.StaticText(self.scrolled_panel, wx.ID_ANY, signal_name)
