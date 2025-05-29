@@ -38,6 +38,38 @@ class Parser:
 
     def _error(self, error_type, stopping_symbol):
         self.error_count += 1
+        if error_type == self.MISSING_DASH_OR_EQUALS:
+            print("Error: expected a dsah or equals symbol.")
+        elif error_type == self.MISSING_ARROW_OR_EQUALS:
+            print("Error: expected a right arrow or equals symbol.")
+        elif error_type == self.MISSING_DASH_OR_COMMA:
+            print("Error: expected a comma or dash.")
+        elif error_type == self.MISSING_STRING:
+            print("Error: expected a string.")
+        elif error_type == self.MISSING_INTEGER:
+            print("Error: expected an integer.")
+        elif error_type == self.MISSING_ARROW:
+            print("Error: expected a right arrow.")
+        elif error_type == self.MISSING_EQUALS:
+            print("Error: expected an equals symbol.")
+        elif error_type == self.NOT_DEVICE_NAME:
+            print("Error: Device name is not in recognised set.")
+        elif error_type == self.MISSING_COMMA:
+            print("Error: expected an integer")
+        elif error_type == self.MISSING_DEVICES_HEADER:
+            print("Error: Missing the section header keyword for devices")
+        elif error_type == self.MISSING_CONNECTIONS_HEADER:
+            print("Error: Missing the section header keyword for connections")
+        elif error_type == self.MISSING_MONITORS_HEADER:
+            print("Error: Missing the section header keyword for monitors")
+        elif error_type == self.MISSING_END_HEADER:
+            print("Error: Missing the end-of-file keyword")
+        if stopping_symbol == "standard":
+            while not (self.symbol.type == self.scanner.COMMA or self.symbol.type == self.scanner.KEYWORD):
+                self.symbol = self.scanner.get_symbol()
+        elif stopping_symbol == "end":
+            while not self.symbol.ID == self.scanner.END_ID:
+                self.symbol = self.scanner.get_symbol()
 
     def _name(self):
         name = ""
@@ -46,7 +78,7 @@ class Parser:
             name = name + self.symbol.id
             self.symbol = self.scanner.get_symbol()
         if not (self.symbol.type == self.scanner.EQUALS or self.symbol.type == self.scanner.DASH):
-            self._error()
+            self._error(self.MISSING_DASH_OR_EQUALS, "standard")
         else:
             return name
         
@@ -59,11 +91,11 @@ class Parser:
                 portID = portID + str(self.symbol.ID)
                 self.symbol = self.scanner.get_symbol()
             if not (self.symbol.type == self.scanner.ARROW or self.symbol.type == self.scanner.EQUALS):
-                self._error()
+                self._error(self.MISSING_ARROW_OR_EQUALS, "standard")
             else:
                 return portID
         else:
-            self._error()
+            self._error(self.MISSING_STRING, "standard")
 
     def _signalID(self):
         deviceID = self._name()
@@ -72,8 +104,8 @@ class Parser:
             portID = self._portID()
             return [deviceID, portID]
         else:
-            if not self.symbol.type == self.scanner.COMMA:
-                self._error()
+            if not self.symbol.type == self.scanner.COMMA or self.symbol.type == self.scanner.ARROW:
+                self._error(self.MISSING_DASH_OR_COMMA, "standard")
             else:
                 return [deviceID, ""] #Not quite sure what this needs to be yet?
             
@@ -83,7 +115,7 @@ class Parser:
             self.symbol = self.scanner.get_symbol()
             return devicetype
         else:
-            self._error()
+            self._error(self.NOT_DEVICE_TYPE, "standard")
     
     def _device(self):
         deviceID = self._name()
@@ -96,18 +128,18 @@ class Parser:
                     qualifier = self.symbol.ID()
                     self.symbol = self.scanner.get_symbol()
                 else:
-                    self.error()
+                    self._error(self.MISSING_INTEGER, "standard") 
             elif self.symbol.type == self.scanner.COMMA:
                 self.symbol = self.scanner.get_symbol()
                 qualifier = None
             else:
-                self._error()
+                self._error(self.MISSING_EQUALS, "standard") 
         else:
             self._error() 
-        if self.error_found == 0:
+        if self.error_count == 0:
             error_type = self._make_device(device, deviceID, qualifier)
-            if error_type != self.devices.NO_ERROR():
-                self._error()
+            if error_type != self.devices.NO_ERROR:
+                self._error(error_type)
 
     def _make_device(self, device, deviceID, qualifier):
         if device in ["AND", "OR", "NAND", "NOR", "XOR"]:
@@ -119,7 +151,7 @@ class Parser:
         elif device == "DTYPE":
             error = self.devices.make_d_type(deviceID)
         else:
-            error = self.error()
+            error = self.devices.NO_ERROR
         return error
     
 
@@ -132,13 +164,13 @@ class Parser:
                 self.symbol = self.scanner.get_symbol()
                 signal2 = self._signalID()
             else:
-                self._error()
+                self._error(self.MISSING_ARROW, "standard")
         else:
-            self._error() 
-        if self.error_found == 0:
+            self._error(self.MISSING_EQUALS, "standard") 
+        if self.error_count == 0:
             error_type = self.network.make_connection(signal1[0], signal1[1], signal2[0], signal2[1])
-            if error_type != self.network.NO_ERROR():
-                self._error()
+            if error_type != self.network.NO_ERROR:
+                self._error(error_type)
     
     def _monitor(self):
         monitorID = self._name()
@@ -146,11 +178,11 @@ class Parser:
             self.symbol = self.scanner.get_symbol()
             port = self._signalID()
         else:
-            self._error() 
-        if self.error_found == 0:
+            self._error(self.MISSING_EQUALS, "standard") 
+        if self.error_count == 0:
             error_type = self.monitors.make_monitor(port[0], port[1])
-            if error_type != self.monitors.NO_ERROR():
-                self._error()
+            if error_type != self.monitors.NO_ERROR:
+                self._error(error_type, "standard")
 
     def _devices_list(self):
         if (self.symbol.type == self.scanner.KEYWORD and self.symbol.id == self.scanner.DEVICES_ID):
@@ -159,10 +191,8 @@ class Parser:
             while self.symbol.type == self.scanner.COMMA:
                 self.symbol = self.scanner.get_symbol()
                 self._device()
-            if not self.symbol.type == self.scanner.KEYWORD:
-                self._error()
         else:
-            self._error()
+            self._error(self.MISSING_DEVICES_HEADER, "End")
 
     def _connections_list(self):
         if (self.symbol.type == self.scanner.KEYWORD and self.symbol.id == self.scanner.CONNECTIONS_ID):
@@ -171,10 +201,8 @@ class Parser:
             while self.symbol.type == self.scanner.COMMA:
                 self.symbol = self.scanner.get_symbol()
                 self._connection()
-            if not self.symbol.type == self.scanner.KEYWORD:
-                self._error()
         else:
-            self._error()
+            self._error(self.MISSING_CONNECTIONS_HEADER, "End")
 
     def _monitors_list(self):
         if (self.symbol.type == self.scanner.KEYWORD and self.symbol.id == self.scanner.MONITORS_ID):
@@ -184,17 +212,17 @@ class Parser:
                 self.symbol = self.scanner.get_symbol()
                 self._monitor()
             if not (self.symbol.type == self.scanner.KEYWORD and self.symbol.id == self.scanner.END_ID):
-                self._error()
+                self._error(self.MISSING_END_HEADER, "Stop")
         else:
-            self._error()     
+            self._error(self.MISSING_MONITORS_HEADER, "End")     
     
     def parse_network(self):
+        """Parse the circuit definition file."""
         self.error_count = 0
         self._devices_list()
         self._connections_list()
         self._monitors_list()
         if self.error_count == 0:
-            """Parse the circuit definition file."""
             return True
         else:
             return False
