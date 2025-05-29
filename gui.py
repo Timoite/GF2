@@ -213,8 +213,8 @@ class Gui(wx.Frame):
         self.main_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
         self.upper_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.lower_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
-        self.main_sizer.Add(self.upper_sizer, 0, wx.EXPAND, 0)
-        self.main_sizer.Add(self.lower_sizer, 0, wx.EXPAND | wx.TOP, 10)
+        self.main_sizer.Add(self.upper_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
+        self.main_sizer.Add(self.lower_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 10)
 
         self.io_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
         self.switches_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
@@ -227,8 +227,8 @@ class Gui(wx.Frame):
         total_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.io_sizer.Add(fileio_sizer, 0, wx.ALL | wx.CENTER, 5)
         self.io_sizer.Add(cycles_sizer, 0, wx.TOP | wx.CENTER, 15)
-        self.io_sizer.Add(run_cont_sizer, 0, wx.ALL | wx.CENTER, 10)
-        self.io_sizer.Add(total_sizer, 0, wx.TOP | wx.CENTER, 15)
+        self.io_sizer.Add(run_cont_sizer, 0, wx.ALL | wx.CENTER, 20)
+        self.io_sizer.Add(total_sizer, 0, wx.BOTTOM | wx.CENTER, 20)
 
         # Configure the widgets
 
@@ -251,7 +251,7 @@ class Gui(wx.Frame):
 
         # Total cycles widgets
         text = wx.StaticText(self, wx.ID_ANY, "Total Cycles: ")
-        total_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 5)
+        total_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 15)
         self.total_cycles_text = \
             wx.StaticText(self, wx.ID_ANY, str(self.cycles_completed))
         total_sizer.Add(self.total_cycles_text, 0, wx.CENTER)
@@ -279,9 +279,9 @@ class Gui(wx.Frame):
 
         # Set screen size
         self.SetSizeHints(500, 440)
-        self.SetSize(570, 1070)
+        self.SetSize(600, 600)
         self.SetSizer(self.main_sizer)
-        self.SetPosition((0, 39))
+        self.SetPosition((100, 100))
 
     def AddSwitch(self, switch_id, switch_state):
         """Add a switch to GUI."""
