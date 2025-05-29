@@ -11,6 +11,7 @@ from network import Network
 from monitors import Monitors
 from scanner import Scanner
 from parse import Parser
+import sys
 
 
 class MyGLCanvas(wxcanvas.GLCanvas):
@@ -192,7 +193,6 @@ class ScrollableGLPanel(wx.ScrolledWindow):
         x, y = self.GetViewStart()
         self.canvas.SetPosition((-x, -y))
 
-
 class Gui(wx.Frame):
     """Configure the main window and all the widgets.
 
@@ -236,7 +236,10 @@ class Gui(wx.Frame):
         # File io widgets
         open_image = wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR)
         open_button = wx.BitmapButton(self, wx.ID_ANY, open_image)
-        fileio_sizer.Add(open_button, 0)
+        fileio_sizer.Add(open_button, 1, wx.RIGHT, 5)
+        quit_image = wx.ArtProvider.GetBitmap(wx.ART_QUIT, wx.ART_TOOLBAR)
+        quit_button = wx.BitmapButton(self, wx.ID_ANY, quit_image)
+        fileio_sizer.Add(quit_button, 1, wx.LEFT, 5)
 
         # Cycles widgets
         text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
@@ -264,6 +267,14 @@ class Gui(wx.Frame):
         # Monitor widgets
         text = wx.StaticText(self, wx.ID_ANY, "Monitors")
         self.lower_sizer.Add(text, 0, wx.ALL | wx.CENTER, 10)
+
+        self.monitors_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.scrolled_panel = wx.ScrolledWindow(self, style=wx.VSCROLL)
+        self.scrolled_panel.SetScrollRate(10, 10)
+        self.scrolled_panel.SetSizer(self.monitors_sizer)
+        self.lower_sizer.Add(self.scrolled_panel, 100, wx.EXPAND)
+        self.monitors_sizer.Fit(self.scrolled_panel)
+
         self.add_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.lower_sizer.Add(self.add_sizer, wx.CENTER)
         add_image = wx.ArtProvider.GetBitmap(wx.ART_PLUS)
@@ -274,12 +285,13 @@ class Gui(wx.Frame):
 
         # Bind events to widgets
         open_button.Bind(wx.EVT_BUTTON, self.OpenFile)
+        quit_button.Bind(wx.EVT_BUTTON, self.Quit)
         run_button.Bind(wx.EVT_BUTTON, self.Run)
         cont_button.Bind(wx.EVT_BUTTON, self.Continue)
         add_button.Bind(wx.EVT_BUTTON, self.CreateMonitor)
 
         # Set screen size
-        self.SetSizeHints(500, 440)
+        self.SetSizeHints(500, 500)
         self.SetSize(600, 600)
         self.SetSizer(self.main_sizer)
         self.SetPosition((100, 100))
@@ -337,19 +349,20 @@ class Gui(wx.Frame):
     def AddMonitor(self, signal_name):
         """Add a monitor that already exists to GUI."""
         monitor_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        pos = len(self.lower_sizer.GetChildren()) - 1
+        pos = len(self.monitors_sizer.GetChildren())
 
-        self.lower_sizer.Insert(pos, monitor_sizer, 0, wx.EXPAND, 0)
+        self.monitors_sizer.Add(monitor_sizer, 0, wx.EXPAND, 0)
         minus_image = wx.ArtProvider.GetBitmap(wx.ART_MINUS)
-        zap_button = wx.BitmapButton(self, wx.ID_ANY, minus_image)
-        text = wx.StaticText(self, wx.ID_ANY, signal_name)
+        zap_button = wx.BitmapButton(self.scrolled_panel, wx.ID_ANY, minus_image)
+        text = wx.StaticText(self.scrolled_panel, wx.ID_ANY, signal_name)
         text.SetMinSize((60, -1))
         monitor_sizer.Add(zap_button, 0, wx.CENTER | wx.ALL, 20)
         monitor_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 10)
         self.scroll_gl = ScrollableGLPanel(
-            self, signal_name, self.cycles_completed)
+            self.scrolled_panel, signal_name, self.cycles_completed)
         monitor_sizer.Add(self.scroll_gl, 1, wx.EXPAND | wx.CENTER | wx.ALL, 5)
 
+        self.scrolled_panel.FitInside()
         self.Layout()
 
         zap_button.Bind(wx.EVT_BUTTON,
@@ -363,6 +376,7 @@ class Gui(wx.Frame):
         if self.monitors.remove_monitor(device, port):
             # Remove from GUI
             self.lower_sizer.GetChildren()[pos].DeleteWindows()
+            self.scrolled_panel.FitInside()
             self.Layout()
         else:
             self.Error("Could not zap monitor.")
@@ -459,3 +473,6 @@ class Gui(wx.Frame):
     def Error(self, error_msg):
         """Create error box."""
         wx.MessageBox(error_msg, 'Error', wx.OK | wx.ICON_ERROR)
+
+    def Quit(self, event):
+        sys.exit()
