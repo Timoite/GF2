@@ -287,7 +287,7 @@ class Gui(wx.Frame):
         quit_button.Bind(wx.EVT_BUTTON, self.Quit)
         run_button.Bind(wx.EVT_BUTTON, self.Run)
         cont_button.Bind(wx.EVT_BUTTON, self.Continue)
-        # add_button.Bind(wx.EVT_BUTTON, self.CreateMonitor)
+        add_button.Bind(wx.EVT_BUTTON, self.CreateMonitor)
 
         # Set screen size
         self.SetSizeHints(500, 500)
