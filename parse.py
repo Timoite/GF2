@@ -52,18 +52,48 @@ class Parser:
             print("Error: expected a right arrow.")
         elif error_type == self.MISSING_EQUALS:
             print("Error: expected an equals symbol.")
-        elif error_type == self.NOT_DEVICE_NAME:
-            print("Error: Device name is not in recognised set.")
+        elif error_type == self.NOT_DEVICE_NAME or error_type == self.devices.BAD_DEVICE:
+            print("Error: This device type does not match any code known by this logic simulator. " \
+            "Valid devices are AND, CLOCK, DTYPE, NAND, NOR, OR, SWITCH, XOR.")
         elif error_type == self.MISSING_COMMA:
-            print("Error: expected an integer")
+            print("Error: expected a comma.")
         elif error_type == self.MISSING_DEVICES_HEADER:
-            print("Error: Missing the section header keyword for devices")
+            print("Error: Missing the section header keyword for devices.")
         elif error_type == self.MISSING_CONNECTIONS_HEADER:
-            print("Error: Missing the section header keyword for connections")
+            print("Error: Missing the section header keyword for connections.")
         elif error_type == self.MISSING_MONITORS_HEADER:
-            print("Error: Missing the section header keyword for monitors")
+            print("Error: Missing the section header keyword for monitors.")
         elif error_type == self.MISSING_END_HEADER:
-            print("Error: Missing the end-of-file keyword")
+            print("Error: Missing the end-of-file keyword.")
+        elif error_type == self.network.INPUT_TO_INPUT:
+            print("Error: A connection’s first port must be an output port.")
+        elif error_type == self.network.OUTPUT_TO_OUTPUT:
+            print("Error: A connection's second port must be an output port.")
+        elif error_type == self.network.INPUT_CONNECTED:
+            print("Error: A connection’s second port must be an input port.")
+        elif error_type == self.network.PORT_ABSENT:
+            print("Error: The specified device does not have a port with this ID.")
+        elif error_type == self.network.DEVICE_ABSENT:
+            print("Error: No device with this ID has been defined.")
+        elif error_type == self.network.INPUT_CONNECTED:
+            print("Error: There is already a connection to the specified input port.")
+        elif error_type == self.devices.ZERO_QUALIFIER:
+            print("Error: A CLOCK device’s qualifier must be a non-zero integer.")
+        elif error_type == self.devices.INVALID_QUALIFIER:
+            print("Error: A SWITCH device may only have an qualifier of 0 or 1.")
+        elif error_type == self.devices.QUALIFIER_OUT_OF_RANGE:
+            print("Error: The qualifier for this type of logic gate must be between 2 and 16.")
+        elif error_type == self.devices.QUALIFIER_PRESENT:
+            print("Error: Devices of this type should not have a qualifier.")
+        elif error_type == self.devices.DEVICE_PRESENT:
+            print("Error: A device with this ID has already been defined.")
+        elif error_type == self.devices.NO_QUALIFIER:
+            print("Error: This device type requires a qualifier.")
+        elif error_type == self.monitors.NOT_OUTPUT:
+            print("Error: The specified port is an input port or not defined." \
+            " Monitors may only connect to output ports.")
+        elif error_type == self.monitors.MONITOR_PRESENT:
+            print("Error: There is already a monitor connected to this output port.")
         if stopping_symbol == "standard":
             while not (self.symbol.type == self.scanner.COMMA or self.symbol.type == self.scanner.KEYWORD):
                 self.symbol = self.scanner.get_symbol()

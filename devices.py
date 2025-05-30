@@ -109,9 +109,9 @@ class Devices:
         dtype_inputs = ["CLK", "SET", "CLEAR", "DATA"]
         dtype_outputs = ["Q", "QBAR"]
 
-        [self.NO_ERROR, self.INVALID_QUALIFIER, self.NO_QUALIFIER,
-         self.BAD_DEVICE, self.QUALIFIER_PRESENT,
-         self.DEVICE_PRESENT] = self.names.unique_error_codes(6)
+        [self.NO_ERROR, self.INVALID_QUALIFIER, self.ZERO_QUALIFIER, self.NO_QUALIFIER,
+         self.QUALIFIER_OUT_OF_RANGE, self.BAD_DEVICE, self.QUALIFIER_PRESENT,
+         self.DEVICE_PRESENT] = self.names.unique_error_codes(8)
 
         self.signal_types = [self.LOW, self.HIGH, self.RISING,
                              self.FALLING, self.BLANK] = range(5)
@@ -302,7 +302,7 @@ class Devices:
             if device_property is None:
                 error_type = self.NO_QUALIFIER
             elif device_property <= 0:
-                error_type = self.INVALID_QUALIFIER
+                error_type = self.ZERO_QUALIFIER
             else:
                 self.make_clock(device_id, device_property)
                 error_type = self.NO_ERROR
@@ -319,7 +319,7 @@ class Devices:
                 if device_property is None:
                     error_type = self.NO_QUALIFIER
                 elif device_property not in range(1, 17):  # between 1 and 16
-                    error_type = self.INVALID_QUALIFIER
+                    error_type = self.QUALIFIER_OUT_OF_RANGE
                 else:
                     self.make_gate(device_id, device_kind, device_property)
                     error_type = self.NO_ERROR

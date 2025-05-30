@@ -90,11 +90,11 @@ def test_make_device(new_devices):
 
 
 @pytest.mark.parametrize("function_args, error", [
-    ("(AND1_ID, new_devices.AND, 17)", "new_devices.INVALID_QUALIFIER"),
+    ("(AND1_ID, new_devices.AND, 17)", "new_devices.QUALIFIER_OUT_OF_RANGE"),
     ("(SW1_ID, new_devices.SWITCH, None)", "new_devices.NO_QUALIFIER"),
     ("(X1_ID, new_devices.XOR, 2)", "new_devices.QUALIFIER_PRESENT"),
     ("(D_ID, D_ID, None)", "new_devices.BAD_DEVICE"),
-    ("(CL_ID, new_devices.CLOCK, 0)", "new_devices.INVALID_QUALIFIER"),
+    ("(CL_ID, new_devices.CLOCK, 0)", "new_devices.ZERO_QUALIFIER"),
     ("(CL_ID, new_devices.CLOCK, 10)", "new_devices.NO_ERROR"),
 
     # Note: XOR device X2_ID will have been made earlier in the function
