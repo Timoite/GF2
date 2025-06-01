@@ -136,16 +136,22 @@ def test_input_unconnected_error(parser_factory):
     with pytest.raises(INPUT_UNCONNECTED): 
         parser.parse_network()
 
-# EBNF grammar tests
+# EBNF grammar tests (WIP)
 
-def test_missing_semicolon(parser_factory):
+def test_missing_comma(parser_factory):
     """Test if missing semicolon raises an error."""
-    parser = parser_factory('missing_semicolon.txt')
-    with pytest.raises(MISSING_SEMICOLON): 
+    parser = parser_factory('missing_comma.txt')
+    with pytest.raises(MISSING_COMMA): 
         parser.parse_network()
 
-def test_missing_device_id(parser_factory):
+def test_missing_devices(parser_factory):
     """Test if missing device ID raises an error."""
-    parser = parser_factory('missing_device_id.txt')
-    with pytest.raises(MISSING_DEVICE_ID): 
+    parser = parser_factory('missing_devices.txt')
+    with pytest.raises(MISSING_DEVICES): 
+        parser.parse_network()
+
+def test_missing_connections(parser_factory):
+    """Test if missing connection raises an error."""
+    parser = parser_factory('missing_connection.txt')
+    with pytest.raises(MISSING_CONNECTIONS): 
         parser.parse_network()
