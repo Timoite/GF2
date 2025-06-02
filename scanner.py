@@ -73,28 +73,31 @@ class Scanner:
         [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.END_ID] = self.names.lookup(self.keywords_list)
         [self.AND_ID, self.OR_ID, self.NAND_ID, self.NOR_ID, self.CLOCK_ID, self.SWITCH_ID, self.DTYPE_ID] = self.names.lookup(self.device_list)
         self.current_character = ""
+
         
     
     def _skip_whitespace(self):
         """Calls _advance until the first character is not whitespace or a new line."""
         exit = 0
         while exit == 0:
-            self._advance()
             if self.current_character not in [" ", "/n"]:
                 exit = 1
+            else:
+                self._advance()
 
     def _skip_comment(self):
         """skip comment by detecting and remove the line starting with the comment symbol '#'"""
         exit = 0
         while exit == 0:
             self._advance()
-            if self.current_character == "/n":
+            if self.current_character == "#":
                 self._advance()
                 exit = 1
 
     def _get_string(self):
         """get the string (seperate by space)"""
         string = self.current_character
+        print(string)
         exit = 0 
         while exit == 0:
             self._advance()
@@ -104,6 +107,7 @@ class Scanner:
                 string = string + self.current_character
             else:
                 exit = 1
+        print(string)
         return string
 
 
@@ -131,12 +135,15 @@ class Scanner:
         """Translate the next sequence of characters into a symbol."""
         symbol = Symbol()
         self._skip_whitespace()
+        print(self.current_character)
 
         # we also need a comment handling if we allow comment 
         if self.current_character == "#":
             self._skip_comment()
+        print(self.current_character)
 
         self._skip_whitespace()
+        print(self.current_character)
 
         if self.current_character.isalpha(): # string
             string = self._get_string()

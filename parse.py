@@ -36,6 +36,26 @@ class Parser:
     def __init__(self, names, devices, network, monitors, scanner):
         """Initialise constants."""
         self.scanner = scanner
+        self.network = network
+        self.devices = devices
+        self.monitors = monitors
+        self.symbol = self.scanner.get_symbol()
+        self.names = names
+
+        self.error_list = [self.MISSING_DASH_OR_EQUALS, self.MISSING_ARROW_OR_EQUALS,
+                           self.MISSING_DASH_OR_COMMA, self.MISSING_STRING,
+                           self.MISSING_INTEGER, self.MISSING_ARROW,
+                           self.MISSING_EQUALS, self.NOT_DEVICE_NAME,
+                           self.devices.BAD_DEVICE, self.MISSING_COMMA,
+                           self.MISSING_DEVICES_HEADER, self.MISSING_CONNECTIONS_HEADER,
+                           self.MISSING_MONITORS_HEADER, self.MISSING_END_HEADER,
+                           self.network.INPUT_TO_INPUT, self.network.OUTPUT_TO_OUTPUT,
+                           self.network.INPUT_CONNECTED, self.network.PORT_ABSENT,
+                           self.network.DEVICE_ABSENT, self.network.INPUT_CONNECTED,
+                           self.devices.ZERO_QUALIFIER, self.devices.INVALID_QUALIFIER,
+                           self.devices.QUALIFIER_OUT_OF_RANGE, self.devices.QUALIFIER_PRESENT,
+                           self.devices.DEVICE_PRESENT, self.devices.NO_QUALIFIER,
+                           self.monitors.NOT_OUTPUT, self.monitors.MONITOR_PRESENT] = range(28)
 
     def _error(self, error_type, stopping_symbol):
         self.error_count += 1
@@ -217,6 +237,9 @@ class Parser:
 
     def _devices_list(self):
         self.symbol = self.scanner.get_symbol()
+        print(self.symbol.type)
+        print(self.scanner.KEYWORD)
+        print(self.symbol.id)
         if (self.symbol.type == self.scanner.KEYWORD and self.symbol.id == self.scanner.DEVICES_ID):
             self.symbol = self.scanner.get_symbol()
             self._device()
@@ -251,6 +274,7 @@ class Parser:
     def parse_network(self):
         """Parse the circuit definition file."""
         self.error_count = 0
+        
         self._devices_list()
         self._connections_list()
         self._monitors_list()
