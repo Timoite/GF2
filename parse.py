@@ -39,7 +39,6 @@ class Parser:
         self.network = network
         self.devices = devices
         self.monitors = monitors
-        self.symbol = self.scanner.get_symbol()
         self.names = names
 
         self.error_list = [self.MISSING_DASH_OR_EQUALS, self.MISSING_ARROW_OR_EQUALS,
@@ -124,9 +123,12 @@ class Parser:
 
     def _name(self):
         name = ""
+        print(self.symbol.type)
+        print(self.scanner.STRING)
         while (self.symbol.type == self.scanner.STRING or self.symbol.type == self.scanner.INTEGER
                 or self.symbol.type == self.scanner.UNDERSCORE):
             name = name + self.symbol.id
+            print("name:", name)
             self.symbol = self.scanner.get_symbol()
         if not (self.symbol.type == self.scanner.EQUALS or self.symbol.type == self.scanner.DASH):
             self._error(self.MISSING_DASH_OR_EQUALS, "standard")
@@ -237,11 +239,9 @@ class Parser:
 
     def _devices_list(self):
         self.symbol = self.scanner.get_symbol()
-        print(self.symbol.type)
-        print(self.scanner.KEYWORD)
-        print(self.symbol.id)
         if (self.symbol.type == self.scanner.KEYWORD and self.symbol.id == self.scanner.DEVICES_ID):
             self.symbol = self.scanner.get_symbol()
+            print(self.symbol.type)
             self._device()
             while self.symbol.type == self.scanner.COMMA:
                 self.symbol = self.scanner.get_symbol()
@@ -274,7 +274,6 @@ class Parser:
     def parse_network(self):
         """Parse the circuit definition file."""
         self.error_count = 0
-        
         self._devices_list()
         self._connections_list()
         self._monitors_list()

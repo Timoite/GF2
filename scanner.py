@@ -59,7 +59,7 @@ class Scanner:
         except FileNotFoundError:
             print("Error: file not found.")
         conte = file.read()
-        # self.contents = list(conte)
+        self.contents = list(conte)
         print("File opened successfully.")
         # print("File contents: " + self.contents.__str__())
         file.close()
@@ -72,7 +72,7 @@ class Scanner:
         # Look up ID from names
         [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.END_ID] = self.names.lookup(self.keywords_list)
         [self.AND_ID, self.OR_ID, self.NAND_ID, self.NOR_ID, self.CLOCK_ID, self.SWITCH_ID, self.DTYPE_ID] = self.names.lookup(self.device_list)
-        self.current_character = ""
+        self.current_character = "A"
 
         
     
@@ -80,7 +80,7 @@ class Scanner:
         """Calls _advance until the first character is not whitespace or a new line."""
         exit = 0
         while exit == 0:
-            if self.current_character not in [" ", "/n"]:
+            if self.current_character not in [" ", "\n"]:
                 exit = 1
             else:
                 self._advance()
@@ -129,17 +129,19 @@ class Scanner:
         '''Used to _advance to the next character when the current character has been analyzed.'''
         self.current_character = self.contents[0]
         self.contents = self.contents[1:]
+        print(self.contents)
 
     def get_symbol(self):
         """Translate the next sequence of characters into a symbol."""
+        print("get_symbol called")
+        print("current character:", self.current_character)
+        # Create a new symbol to return
         symbol = Symbol()
         self._skip_whitespace()
-        print(self.current_character)
 
         # we also need a comment handling if we allow comment 
         if self.current_character == "#":
             self._skip_comment()
-        print(self.current_character)
 
         self._skip_whitespace()
         print("current character:",self.current_character)
@@ -150,7 +152,8 @@ class Scanner:
                 symbol.type = self.KEYWORD
             else:
                 symbol.type = self.STRING
-            symbol.id = self.names.lookup(string)
+            symbol.id = self.names.lookup([string])[0]
+            print("get_symbol id:", symbol.id)
         elif self.current_character.isdigit(): # integer
             symbol.id = self._get_integer()
             symbol.type = self.INTEGER
