@@ -61,7 +61,6 @@ class Scanner:
         conte = file.read()
         self.contents = list(conte)
         print("File opened successfully.")
-        # print("File contents: " + self.contents.__str__())
         file.close()
         self.names = names
         self.symbol_type_list = [self.KEYWORD, self.DEVICE_TYPE, self.STRING, self.INTEGER,
@@ -71,9 +70,8 @@ class Scanner:
 
         # Look up ID from names
         [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.END_ID] = self.names.lookup(self.keywords_list)
-        [self.AND_ID, self.OR_ID, self.NAND_ID, self.NOR_ID, self.CLOCK_ID, self.SWITCH_ID, self.DTYPE_ID] = self.names.lookup(self.device_list)
+        [self.AND_ID, self.OR_ID, self.NAND_ID, self.NOR_ID, self.XOR_ID, self.CLOCK_ID, self.SWITCH_ID, self.DTYPE_ID] = self.names.lookup(self.device_list)
         self._advance()
-
         
     
     def _skip_whitespace(self):
@@ -97,16 +95,15 @@ class Scanner:
     def _get_string(self):
         """get the string (seperate by space)"""
         string = ""
-        print("initilized string in _get_string: ", string)
         exit = 0 
         while exit == 0:
             if self.current_character == "#":
                 self._skip_comment()
             elif self.current_character.isalpha():
                 string = string + self.current_character
+                self._advance()
             else:
                 exit = 1
-            self._advance()
         return string
 
 
@@ -132,8 +129,6 @@ class Scanner:
 
     def get_symbol(self):
         """Translate the next sequence of characters into a symbol."""
-        print("get_symbol called")
-        print("current character:", self.current_character)
         # Create a new symbol to return
         symbol = Symbol()
         self._skip_whitespace()
@@ -143,18 +138,15 @@ class Scanner:
             self._skip_comment()
 
         self._skip_whitespace()
-        print("current character:",self.current_character)
         if self.current_character.isalpha(): # string
             string = self._get_string()
-            print("get_symbol string:", string)
             if string in self.keywords_list:
                 symbol.type = self.KEYWORD
             elif string in self.device_list:
-                symbol.type == self.DEVICE_TYPE
+                symbol.type = self.DEVICE_TYPE
             else:
                 symbol.type = self.STRING
             symbol.id = self.names.lookup([string])[0]
-            print("get_symbol id:", symbol.id)
         elif self.current_character.isdigit(): # integer
             integer = self._get_integer()
             symbol.id = self.names.lookup([integer])[0]
@@ -182,7 +174,6 @@ class Scanner:
         elif self.current_character == "_": # punctuation
             symbol.type = self.UNDERSCORE
             symbol.id = self.names.lookup(self.current_character)[0]
-            print("underscore")
             self._advance()
         elif self.current_character == "": # end of file
             symbol.type = self.EOF
