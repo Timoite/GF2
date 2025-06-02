@@ -59,9 +59,9 @@ class Scanner:
         except FileNotFoundError:
             print("Error: file not found.")
         conte = file.read()
-        self.contents = list(conte)
+        # self.contents = list(conte)
         print("File opened successfully.")
-        print("File contents: " + self.contents.__str__())
+        # print("File contents: " + self.contents.__str__())
         file.close()
         self.names = names
         self.symbol_type_list = [self.KEYWORD, self.DEVICE_TYPE, self.STRING, self.INTEGER,
@@ -96,8 +96,8 @@ class Scanner:
 
     def _get_string(self):
         """get the string (seperate by space)"""
-        string = self.current_character
-        print(string)
+        string = ""
+        print("initilized string in _get_string: ", string)
         exit = 0 
         while exit == 0:
             self._advance()
@@ -107,7 +107,6 @@ class Scanner:
                 string = string + self.current_character
             else:
                 exit = 1
-        print(string)
         return string
 
 
@@ -143,10 +142,10 @@ class Scanner:
         print(self.current_character)
 
         self._skip_whitespace()
-        print(self.current_character)
-
+        print("current character:",self.current_character)
         if self.current_character.isalpha(): # string
             string = self._get_string()
+            print("get_symbol string:", string)
             if string in self.keywords_list:
                 symbol.type = self.KEYWORD
             else:
@@ -177,8 +176,6 @@ class Scanner:
             symbol.type = self.EOF
         else: # not a valid character
             self._advance()
-            # Recursively call another one?
-            return self.get_symbol()
         
         return symbol
 
