@@ -24,15 +24,22 @@ def test_unique_error_codes_gives_errors(new_names):
 
 def test_query(new_names):
     """Test if query returns the correct error codes."""
-    assert True  # Placeholder for actual query logic
+    new_names.names_dict["hello"] = 15
+    assert new_names.query("hello") == 15
+    assert new_names.query("I am not in the dictionary") == None
+
 
 def test_lookup(new_names):
     """Test if lookup returns the correct device IDs."""
-    assert True  # Placeholder for actual lookup logic
+    new_names.names_dict["hello"] = 15
+    assert new_names.lookup(["hello"]) == [15]
+    assert new_names.lookup(["I am not in the dictionary"]) == [0]
 
 def test_get_name_string(new_names):
     """Test if get_name_string returns the correct name string."""
-    assert True  # Placeholder for actual get_name_string logic
+    num = new_names.lookup(["hello"])[0]
+    assert new_names.get_name_string(num) == "hello"
+    assert new_names.get_name_string(100) == None
 
 
 
