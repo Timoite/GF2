@@ -98,7 +98,7 @@ class Parser:
             while not (self.symbol.type == self.scanner.COMMA or self.symbol.type == self.scanner.KEYWORD):
                 self.symbol = self.scanner.get_symbol()
         elif stopping_symbol == "end":
-            while not self.symbol.ID == self.scanner.END_ID:
+            while not self.symbol.ID == self.scanner.END_ID or self.symbol.ID == self.scanner.EOF:
                 self.symbol = self.scanner.get_symbol()
 
     def _name(self):
