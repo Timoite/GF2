@@ -53,17 +53,6 @@ class Scanner:
         """Open specified file and initialise reserved words and IDs."""
 
         self.names = names
-
-        self.symbol_type_list = [self.KEYWORD, self.STRING, self.INTEGER,
-                                  self.COMMA, self.ARROW, self.EQUALS, self.SLASH, self.DASH, self.UNDERSCORE]
-        self.keywords_list = ["DEVICES", "CONNECTIONS", "MONITORS", "CLOCK", 
-                             "SWITCH", "AND", "NAND", "OR", "NOR", "XOR", "DTYPE"]
-        
-        # Look up ID from names
-        # [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.END_ID] = self.names.lookup(self.keywords_list)
-        [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.CLOCK_ID,
-         self.SWITCH_ID, self.AND_ID, self.NAND_ID, self.OR_ID, self.NOR_ID,
-         self.XOR_ID, self.DTYPE_ID] = self.names.lookup(self.keywords_list)
         
         # Initialize character reading
         self.current_character = ""
@@ -79,9 +68,11 @@ class Scanner:
         file.close()
         self.names = names
         self.symbol_type_list = [self.KEYWORD, self.DEVICE_TYPE, self.STRING, self.INTEGER,
-                                  self.COMMA, self.ARROW, self.EQUALS, self.SLASH, self.DASH, self.UNDERSCORE]
+                                  self.COMMA, self.ARROW, self.EQUALS, self.SLASH, self.DASH, self.UNDERSCORE] = range(10)
         self.keywords_list = ["DEVICES", "CONNECTIONS", "MONITORS", "END"]
         self.device_list = ["AND", "OR", "NAND", "NOR", "CLOCK", "SWITCH", "DTYPE"]
+
+        # Look up ID from names
         [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.END_ID] = self.names.lookup(self.keywords_list)
         [self.AND_ID, self.OR_ID, self.NAND_ID, self.NOR_ID, self.CLOCK_ID, self.SWITCH_ID, self.DTYPE_ID] = self.names.lookup(self.device_list)
         self.current_character = ""

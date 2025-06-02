@@ -35,6 +35,7 @@ class Parser:
 
     def __init__(self, names, devices, network, monitors, scanner):
         """Initialise constants."""
+        self.scanner = scanner
 
     def _error(self, error_type, stopping_symbol):
         self.error_count += 1
@@ -215,6 +216,7 @@ class Parser:
                 self._error(error_type, "standard")
 
     def _devices_list(self):
+        self.symbol = self.scanner.get_symbol()
         if (self.symbol.type == self.scanner.KEYWORD and self.symbol.id == self.scanner.DEVICES_ID):
             self.symbol = self.scanner.get_symbol()
             self._device()
