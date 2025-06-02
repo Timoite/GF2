@@ -58,7 +58,10 @@ class Scanner:
             file = open(path, "r")
         except FileNotFoundError:
             print("Error: file not found.")
-        self.contents = file.read()
+        conte = file.read()
+        self.contents = list(conte)
+        print("File opened successfully.")
+        print("File contents: " + self.contents.__str__())
         file.close()
         self.names = names
         self.symbol_type_list = [self.KEYWORD, self.DEVICE_TYPE, self.STRING, self.INTEGER,
@@ -85,7 +88,7 @@ class Scanner:
         exit = 0
         while exit == 0:
             self._advance()
-            if self.current_character == "#":
+            if self.current_character == "/n":
                 self._advance()
                 exit = 1
 
@@ -122,7 +125,7 @@ class Scanner:
     def _advance(self):
         '''Used to _advance to the next character when the current character has been analyzed.'''
         self.current_character = self.contents[0]
-        self.contents = self.contents[1]
+        self.contents = self.contents[1:]
 
     def get_symbol(self):
         """Translate the next sequence of characters into a symbol."""
@@ -130,7 +133,8 @@ class Scanner:
         self._skip_whitespace()
 
         # we also need a comment handling if we allow comment 
-        self._skip_comment()
+        if self.current_character == "#":
+            self._skip_comment()
 
         self._skip_whitespace()
 
