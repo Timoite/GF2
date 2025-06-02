@@ -65,6 +65,8 @@ class Scanner:
                                   self.COMMA, self.ARROW, self.EQUALS, self.SLASH, self.DASH, self.UNDERSCORE] = range(10)
         self.keywords_list = ["DEVICES", "CONNECTIONS", "MONITORS", "END"]
         self.device_list = ["AND", "OR", "NAND", "NOR", "CLOCK", "SWITCH", "DTYPE"]
+
+        # Look up ID from names
         [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.END_ID] = self.names.lookup(self.keywords_list)
         [self.AND_ID, self.OR_ID, self.NAND_ID, self.NOR_ID, self.CLOCK_ID, self.SWITCH_ID, self.DTYPE_ID] = self.names.lookup(self.device_list)
         self.current_character = ""
