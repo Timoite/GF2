@@ -45,7 +45,7 @@ class Parser:
                            self.MISSING_DASH_OR_COMMA, self.MISSING_STRING,
                            self.MISSING_INTEGER, self.MISSING_ARROW,
                            self.MISSING_EQUALS, self.NOT_DEVICE_NAME,
-                           self.devices.BAD_DEVICE, self.MISSING_COMMA,
+                           self.devices.BAD_DEVICE, self.MISSING_COMMA, self.MISSING_SLASH_OR_COMMA,
                            self.MISSING_DEVICES_HEADER, self.MISSING_CONNECTIONS_HEADER,
                            self.MISSING_MONITORS_HEADER, self.MISSING_END_HEADER,
                            self.network.INPUT_TO_INPUT, self.network.OUTPUT_TO_OUTPUT,
@@ -54,16 +54,18 @@ class Parser:
                            self.devices.ZERO_QUALIFIER, self.devices.INVALID_QUALIFIER,
                            self.devices.QUALIFIER_OUT_OF_RANGE, self.devices.QUALIFIER_PRESENT,
                            self.devices.DEVICE_PRESENT, self.devices.NO_QUALIFIER,
-                           self.monitors.NOT_OUTPUT, self.monitors.MONITOR_PRESENT] = range(28)
+                           self.monitors.NOT_OUTPUT, self.monitors.MONITOR_PRESENT] = range(29)
 
     def _error(self, error_type, stopping_symbol):
         self.error_count += 1
         if error_type == self.MISSING_DASH_OR_EQUALS:
-            print("Error: expected a dsah or equals symbol.")
+            print("Error: expected a dash or equals symbol.")
         elif error_type == self.MISSING_ARROW_OR_EQUALS:
             print("Error: expected a right arrow or equals symbol.")
         elif error_type == self.MISSING_DASH_OR_COMMA:
             print("Error: expected a comma or dash.")
+        elif error_type == self.MISSING_SLASH_OR_COMMA:
+            print("Error: expected a comma or slash.")
         elif error_type == self.MISSING_STRING:
             print("Error: expected a string.")
         elif error_type == self.MISSING_INTEGER:
@@ -124,10 +126,14 @@ class Parser:
     def _name(self):
         name = ""
         print(self.symbol.type)
+        print("!")
         print(self.scanner.STRING)
+        print(self.scanner.UNDERSCORE)
+        print(self.scanner.INTEGER)
+        print("?")
         while (self.symbol.type == self.scanner.STRING or self.symbol.type == self.scanner.INTEGER
                 or self.symbol.type == self.scanner.UNDERSCORE):
-            name = name + self.symbol.id
+            name = name + self.names.get_name_string(self.symbol.id)
             print("name:", name)
             self.symbol = self.scanner.get_symbol()
         if not (self.symbol.type == self.scanner.EQUALS or self.symbol.type == self.scanner.DASH):
@@ -168,7 +174,7 @@ class Parser:
             self.symbol = self.scanner.get_symbol()
             return devicetype
         else:
-            self._error(self.NOT_DEVICE_TYPE, "standard")
+            self._error(self.NOT_DEVICE_NAME, "standard")
     
     def _device(self):
         deviceID = self._name()
@@ -186,9 +192,9 @@ class Parser:
                 self.symbol = self.scanner.get_symbol()
                 qualifier = None
             else:
-                self._error(self.MISSING_EQUALS, "standard") 
+                self._error(self.MISSING_SLASH_OR_COMMA, "standard") 
         else:
-            self._error() 
+            self._error(self.MISSING_EQUALS, "standard") 
         if self.error_count == 0:
             error_type = self._make_device(device, deviceID, qualifier)
             if error_type != self.devices.NO_ERROR:

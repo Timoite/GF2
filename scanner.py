@@ -67,12 +67,12 @@ class Scanner:
         self.symbol_type_list = [self.KEYWORD, self.DEVICE_TYPE, self.STRING, self.INTEGER,
                                   self.COMMA, self.ARROW, self.EQUALS, self.SLASH, self.DASH, self.UNDERSCORE, self.EOF] = range(11)
         self.keywords_list = ["DEVICES", "CONNECTIONS", "MONITORS", "END"]
-        self.device_list = ["AND", "OR", "NAND", "NOR", "CLOCK", "SWITCH", "DTYPE"]
+        self.device_list = ["AND", "OR", "NAND", "NOR", "XOR", "CLOCK", "SWITCH", "DTYPE"]
 
         # Look up ID from names
         [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.END_ID] = self.names.lookup(self.keywords_list)
         [self.AND_ID, self.OR_ID, self.NAND_ID, self.NOR_ID, self.CLOCK_ID, self.SWITCH_ID, self.DTYPE_ID] = self.names.lookup(self.device_list)
-        self.current_character = "A"
+        self._advance()
 
         
     
@@ -100,13 +100,13 @@ class Scanner:
         print("initilized string in _get_string: ", string)
         exit = 0 
         while exit == 0:
-            self._advance()
             if self.current_character == "#":
                 self._skip_comment()
             elif self.current_character.isalpha():
                 string = string + self.current_character
             else:
                 exit = 1
+            self._advance()
         return string
 
 
@@ -129,7 +129,6 @@ class Scanner:
         '''Used to _advance to the next character when the current character has been analyzed.'''
         self.current_character = self.contents[0]
         self.contents = self.contents[1:]
-        print(self.contents)
 
     def get_symbol(self):
         """Translate the next sequence of characters into a symbol."""
@@ -150,33 +149,44 @@ class Scanner:
             print("get_symbol string:", string)
             if string in self.keywords_list:
                 symbol.type = self.KEYWORD
+            elif string in self.device_list:
+                symbol.type == self.DEVICE_TYPE
             else:
                 symbol.type = self.STRING
             symbol.id = self.names.lookup([string])[0]
             print("get_symbol id:", symbol.id)
         elif self.current_character.isdigit(): # integer
-            symbol.id = self._get_integer()
+            integer = self._get_integer()
+            symbol.id = self.names.lookup([integer])[0]
             symbol.type = self.INTEGER
         elif self.current_character == "=": # punctuation
             symbol.type = self.EQUALS
+            symbol.id = self.names.lookup(self.current_character)[0]
             self._advance()
         elif self.current_character == "-": # punctuation
             symbol.type = self.DASH
+            symbol.id = self.names.lookup(self.current_character)[0]
             self._advance()
         elif self.current_character == "/": # punctuation
             symbol.type = self.SLASH
+            symbol.id = self.names.lookup(self.current_character)[0]
             self._advance()
         elif self.current_character == ",": # punctuation
             symbol.type = self.COMMA
+            symbol.id = self.names.lookup(self.current_character)[0]
             self._advance()
         elif self.current_character == ">": # punctuation
             symbol.type = self.ARROW
+            symbol.id = self.names.lookup(self.current_character)[0]
             self._advance()
         elif self.current_character == "_": # punctuation
             symbol.type = self.UNDERSCORE
+            symbol.id = self.names.lookup(self.current_character)[0]
+            print("underscore")
             self._advance()
         elif self.current_character == "": # end of file
             symbol.type = self.EOF
+            symbol.id = self.names.lookup(self.current_character)[0]
         else: # not a valid character
             self._advance()
         
