@@ -65,7 +65,7 @@ class Scanner:
         file.close()
         self.names = names
         self.symbol_type_list = [self.KEYWORD, self.DEVICE_TYPE, self.STRING, self.INTEGER,
-                                  self.COMMA, self.ARROW, self.EQUALS, self.SLASH, self.DASH, self.UNDERSCORE] = range(10)
+                                  self.COMMA, self.ARROW, self.EQUALS, self.SLASH, self.DASH, self.UNDERSCORE, self.EOF] = range(11)
         self.keywords_list = ["DEVICES", "CONNECTIONS", "MONITORS", "END"]
         self.device_list = ["AND", "OR", "NAND", "NOR", "CLOCK", "SWITCH", "DTYPE"]
 
