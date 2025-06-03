@@ -75,59 +75,62 @@ class Scanner:
         
     
     def _skip_whitespace(self):
-        """Calls _advance until the first character is not whitespace or a new line, so as to skip whitespace."""
-        exit = 0
-        while exit == 0:
+        """Skip whitespace and newlines by advancing until a non-whitespace character is found."""
+        while True:
             if self.current_character not in [" ", "\n"]:
-                exit = 1
-            else:
-                self._advance()
+                break
+            self._advance()
 
     def _skip_comment(self):
-        """skip comment by detecting and remove the line starting with the comment symbol '#' and ending with symbol '#'."""
-        exit = 0
-        while exit == 0:
+        """Skip a comment line starting and ending with '#'.
+
+        Advances through the file until the closing '#' is found or end of file is reached.
+        Prints an error if the comment is not closed.
+        """
+        while True:
             self._advance()
             if self.current_character == "#":
                 self._advance()
-                exit = 1
-            # if end of file is reached, exit the loop
+                break
             elif self.current_character == "":
                 print("Error: comment not closed.")
-                exit = 1
+                break
 
     def _get_string(self):
-        """Calls it when the current character is a letter, and returns the whole string of characters until a non-letter character is encountered."""
+        """Return a string of consecutive letters starting at the current character.
+
+        Skips comments if encountered. Stops at the first non-letter character.
+        """
         string = ""
-        exit = 0 
-        while exit == 0:
+        while True:
+            # Skip comments if encountered
             if self.current_character == "#":
                 self._skip_comment()
             elif self.current_character.isalpha():
-                string = string + self.current_character
+                string += self.current_character
                 self._advance()
-            else:
-                exit = 1
+            else: # Stop at the first non-letter character
+                break
         return string
 
-
     def _get_integer(self):
-        '''As with _get_string, but with digits instead of characters.'''
+        """Return a string of consecutive digits starting at the current character.
+
+        Skips comments if encountered. Stops at the first non-digit character.
+        """
         integer = self.current_character
-        exit = 0 
-        while exit == 0:
+        while True:
             self._advance()
             if self.current_character == "#":
                 self._skip_comment()
             elif self.current_character.isdigit():
-                integer = integer + self.current_character
+                integer += self.current_character
             else:
-                exit = 1
+                break
         return integer
-    # As with __get_string, but with digits instead of characters.
 
     def _advance(self):
-        '''Used to _advance to the next character when the current character has been analyzed.'''
+        """Advance to the next character in the file contents."""
         self.current_character = self.contents[0]
         self.contents = self.contents[1:]
 
