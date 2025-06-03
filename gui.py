@@ -194,49 +194,59 @@ class Gui(wx.Frame):
         self.upper_sizer.Add(self.io_sizer, 2, wx.EXPAND | wx.RIGHT, 10)
         self.upper_sizer.Add(self.switches_sizer, 1, wx.EXPAND, 0)
 
-        fileio_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        run_cont_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        cycles_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        total_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.io_sizer.Add(fileio_sizer, 0, wx.ALL | wx.CENTER, 5)
-        self.io_sizer.Add(cycles_sizer, 0, wx.TOP | wx.CENTER, 15)
-        self.io_sizer.Add(run_cont_sizer, 0, wx.ALL | wx.CENTER, 10)
-        self.io_sizer.Add(total_sizer, 0, wx.TOP | wx.CENTER, 15)
+        self.fileio_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.run_cont_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.cycles_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.total_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.io_sizer.Add(self.fileio_sizer, 0, wx.ALL | wx.CENTER, 5)
+        self.io_sizer.Add(self.cycles_sizer, 0, wx.TOP | wx.CENTER, 15)
+        self.io_sizer.Add(self.run_cont_sizer, 0, wx.ALL | wx.CENTER, 10)
+        self.io_sizer.Add(self.total_sizer, 0, wx.TOP | wx.CENTER, 15)
+
+        self.init_widgets()
+
+    def init_widgets(self):
 
         # Configure the widgets
 
         # File io widgets
+        self.fileio_sizer.Clear(True)
         open_image = wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR)
         open_button = wx.BitmapButton(self, wx.ID_ANY, open_image)
-        fileio_sizer.Add(open_button, 1, wx.RIGHT, 5)
+        self.fileio_sizer.Add(open_button, 1, wx.RIGHT, 5)
         quit_image = wx.ArtProvider.GetBitmap(wx.ART_QUIT, wx.ART_TOOLBAR)
         quit_button = wx.BitmapButton(self, wx.ID_ANY, quit_image)
-        fileio_sizer.Add(quit_button, 1, wx.LEFT, 5)
+        self.fileio_sizer.Add(quit_button, 1, wx.LEFT, 5)
 
         # Cycles widgets
+        self.cycles_sizer.Clear(True)
         text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
-        cycles_sizer.Add(text, 1, wx.CENTER | wx.RIGHT, 10)
+        self.cycles_sizer.Add(text, 1, wx.CENTER | wx.RIGHT, 10)
         self.spin = wx.SpinCtrl(self, wx.ID_ANY, '20')
-        cycles_sizer.Add(self.spin, 0, wx.CENTER)
+        self.cycles_sizer.Add(self.spin, 0, wx.CENTER)
 
         # Run and continue widgets
+        self.run_cont_sizer.Clear(True)
         run_button = wx.Button(self, wx.ID_ANY, "Run")
-        run_cont_sizer.Add(run_button, 1, wx.CENTER | wx.RIGHT, 10)
+        self.run_cont_sizer.Add(run_button, 1, wx.CENTER | wx.RIGHT, 10)
         cont_button = wx.Button(self, wx.ID_ANY, "Continue")
-        run_cont_sizer.Add(cont_button, 1, wx.CENTER)
+        self.run_cont_sizer.Add(cont_button, 1, wx.CENTER)
 
         # Total cycles widgets
+        self.total_sizer.Clear(True)
         text = wx.StaticText(self, wx.ID_ANY, "Total Cycles: ")
-        total_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 5)
+        self.total_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 5)
         self.total_cycles_text = \
             wx.StaticText(self, wx.ID_ANY, str(self.cycles_completed))
-        total_sizer.Add(self.total_cycles_text, 0, wx.CENTER)
+        self.total_sizer.Add(self.total_cycles_text, 0, wx.CENTER)
 
         # Switches widgets
+        self.switches_sizer.Clear(True)
         text = wx.StaticText(self, wx.ID_ANY, "Switches")
         self.switches_sizer.Add(text, 0, wx.CENTER)
 
         # Monitor widgets
+        self.lower_sizer.Clear(True)
         text = wx.StaticText(self, wx.ID_ANY, "Monitors")
         self.lower_sizer.Add(text, 1, wx.ALL | wx.CENTER, 10)
 
@@ -360,8 +370,11 @@ class Gui(wx.Frame):
             style=wx.FD_OPEN+wx.FD_FILE_MUST_EXIST)
         if openFileDialog.ShowModal() == wx.ID_CANCEL:
             return
-        path = openFileDialog.GetPath()
-        print("File chosen =", path)
+        self.path = openFileDialog.GetPath()
+        print("File chosen =", self.path)
+        self.init_sim()
+
+    def init_sim(self):
 
         # Initialise instances of the four inner simulator classes
         self.names = Names()
@@ -369,7 +382,7 @@ class Gui(wx.Frame):
         self.network = Network(self.names, self.devices)
         self.monitors = Monitors(self.names, self.devices, self.network)
 
-        scanner = Scanner(path, self.names)
+        scanner = Scanner(self.path, self.names)
         parser = Parser(self.names,
                         self.devices, self.network, self.monitors, scanner)
         if not parser.parse_network():
@@ -422,7 +435,7 @@ class Gui(wx.Frame):
 
     def Run(self, event):
         """Run the simulation from scratch."""
-        self.cycles_completed = 0
+        self.init_sim()
         self.run_network()
 
     def Continue(self, event):
