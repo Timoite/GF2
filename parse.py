@@ -82,6 +82,7 @@ class Parser:
                 pass
             else:
                 current_line = current_line + next_symbol
+        print(error_type)
         if stopping_symbol == "standard":
             while not (self.symbol.type == self.scanner.COMMA
                        or self.symbol.type == self.scanner.KEYWORD
@@ -564,7 +565,10 @@ class Parser:
         self._connections_list()
         self._monitors_list()
         if self.error_count == 0:
-            print("File parsed successfully")
+            print("Parsed!")
             return True
         else:
             return False
+        # For now just return True, so that userint and gui can run in the
+        # skeleton code. When complete, should return False when there are
+        # errors in the circuit definition file.
