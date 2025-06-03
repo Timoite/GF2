@@ -329,7 +329,7 @@ class Parser:
         else:
             return current_line.find(target) + 1
 
-    def _name(self, current_line):
+    def _name(self):
         name = ""
         while (self.symbol.type == self.scanner.STRING
                 or self.symbol.type == self.scanner.INTEGER
