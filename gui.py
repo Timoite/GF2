@@ -302,8 +302,6 @@ class Gui(wx.Frame):
         if not self.monitors:
             self.Error("Please open file before creating monitor.")
             return
-        
-        print("in create monitor")
 
         # Get which signal to add
         signal_int = self.choice.GetSelection()
