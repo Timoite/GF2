@@ -97,7 +97,8 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         try:
             [device_id, output_id] = \
                 self.devices.get_signal_ids(self.monitor_name)
-            signal_list = self.monitors_dictionary[(device_id, output_id)]
+            print(self.monitors_dictionary)
+            signal_list = self.monitors_dictionary[(self.names.get_name_string(device_id), output_id)]
 
             # Draw a sample signal trace
             GL.glColor3f(0.0, 0.0, 1.0)  # signal trace is blue
