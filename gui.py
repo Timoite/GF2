@@ -165,6 +165,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GL.glViewport(0, 0, size.width, size.height)
         event.Skip()
 
+
 class Gui(wx.Frame):
     """Configure the main window and all the widgets.
 
@@ -183,34 +184,29 @@ class Gui(wx.Frame):
         self.cycles_completed = 0
 
         # Configure sizers for layout
-        self.main_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
-        self.upper_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.lower_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
-        self.main_sizer.Add(self.upper_sizer, 0, wx.EXPAND, 0)
-        self.main_sizer.Add(self.lower_sizer, 0, wx.EXPAND | wx.TOP, 10)
+        main_sizer = wx.BoxSizer(wx.VERTICAL)
+        upper_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        lower_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
+        main_sizer.Add(upper_sizer, 0, wx.EXPAND | wx.ALL, 10)
+        main_sizer.Add(lower_sizer, 0, wx.EXPAND | wx.LEFT | wx.BOTTOM | wx.RIGHT, 10)
 
-        self.io_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
-        self.switches_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
-        self.upper_sizer.Add(self.io_sizer, 2, wx.EXPAND | wx.RIGHT, 10)
-        self.upper_sizer.Add(self.switches_sizer, 1, wx.EXPAND, 0)
+        io_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
+        switches_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
+        upper_sizer.Add(io_sizer, 2, wx.EXPAND | wx.RIGHT, 10)
+        upper_sizer.Add(switches_sizer, 1, wx.EXPAND, 0)
 
         self.fileio_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.run_cont_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.cycles_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.total_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.io_sizer.Add(self.fileio_sizer, 0, wx.ALL | wx.CENTER, 5)
-        self.io_sizer.Add(self.cycles_sizer, 0, wx.TOP | wx.CENTER, 15)
-        self.io_sizer.Add(self.run_cont_sizer, 0, wx.ALL | wx.CENTER, 10)
-        self.io_sizer.Add(self.total_sizer, 0, wx.TOP | wx.CENTER, 15)
-
-        self.init_widgets()
-
-    def init_widgets(self):
+        io_sizer.Add(self.fileio_sizer, 0, wx.ALL | wx.CENTER, 5)
+        io_sizer.Add(self.cycles_sizer, 0, wx.TOP | wx.CENTER, 15)
+        io_sizer.Add(self.run_cont_sizer, 0, wx.ALL | wx.CENTER, 10)
+        io_sizer.Add(self.total_sizer, 0, wx.BOTTOM | wx.CENTER, 5)
 
         # Configure the widgets
 
         # File io widgets
-        self.fileio_sizer.Clear(True)
         open_image = wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR)
         open_button = wx.BitmapButton(self, wx.ID_ANY, open_image)
         self.fileio_sizer.Add(open_button, 1, wx.RIGHT, 5)
@@ -219,21 +215,18 @@ class Gui(wx.Frame):
         self.fileio_sizer.Add(quit_button, 1, wx.LEFT, 5)
 
         # Cycles widgets
-        self.cycles_sizer.Clear(True)
         text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
         self.cycles_sizer.Add(text, 1, wx.CENTER | wx.RIGHT, 10)
         self.spin = wx.SpinCtrl(self, wx.ID_ANY, '20')
         self.cycles_sizer.Add(self.spin, 0, wx.CENTER)
 
         # Run and continue widgets
-        self.run_cont_sizer.Clear(True)
         run_button = wx.Button(self, wx.ID_ANY, "Run")
         self.run_cont_sizer.Add(run_button, 1, wx.CENTER | wx.RIGHT, 10)
         cont_button = wx.Button(self, wx.ID_ANY, "Continue")
         self.run_cont_sizer.Add(cont_button, 1, wx.CENTER)
 
         # Total cycles widgets
-        self.total_sizer.Clear(True)
         text = wx.StaticText(self, wx.ID_ANY, "Total Cycles: ")
         self.total_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 5)
         self.total_cycles_text = \
@@ -241,29 +234,29 @@ class Gui(wx.Frame):
         self.total_sizer.Add(self.total_cycles_text, 0, wx.CENTER)
 
         # Switches widgets
-        self.switches_sizer.Clear(True)
         text = wx.StaticText(self, wx.ID_ANY, "Switches")
-        self.switches_sizer.Add(text, 0, wx.CENTER)
+        switches_sizer.Add(text, 0, wx.CENTER)
+        self.switch_rows_sizer = wx.BoxSizer(wx.VERTICAL)
+        switches_sizer.Add(self.switch_rows_sizer, 0, wx.EXPAND | wx.CENTER)
 
         # Monitor widgets
-        self.lower_sizer.Clear(True)
         text = wx.StaticText(self, wx.ID_ANY, "Monitors")
-        self.lower_sizer.Add(text, 1, wx.ALL | wx.CENTER, 10)
+        lower_sizer.Add(text, 1, wx.ALL | wx.CENTER, 10)
 
-        self.monitors_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.monitor_rows_sizer = wx.BoxSizer(wx.VERTICAL)
         self.scrolled_panel = wx.ScrolledWindow(self, style=wx.VSCROLL)
         self.scrolled_panel.SetScrollRate(10, 10)
-        self.scrolled_panel.SetSizer(self.monitors_sizer)
-        self.lower_sizer.Add(self.scrolled_panel, 100, wx.EXPAND)
-        self.monitors_sizer.Fit(self.scrolled_panel)
+        self.scrolled_panel.SetSizer(self.monitor_rows_sizer)
+        lower_sizer.Add(self.scrolled_panel, 100, wx.EXPAND)
+        self.monitor_rows_sizer.Fit(self.scrolled_panel)
 
-        self.add_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.monitors_sizer.Add(self.add_sizer, 0, wx.EXPAND)
+        add_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        lower_sizer.Add(add_sizer, 0, wx.EXPAND)
         add_image = wx.ArtProvider.GetBitmap(wx.ART_PLUS)
-        add_button = wx.BitmapButton(self.scrolled_panel, wx.ID_ANY, add_image)
-        self.choice = wx.Choice(self.scrolled_panel, choices=[])
-        self.add_sizer.Add(add_button, 0, wx.ALL, 20)
-        self.add_sizer.Add(self.choice, 0, wx.CENTER | wx.RIGHT, 15)
+        add_button = wx.BitmapButton(self, wx.ID_ANY, add_image)
+        add_sizer.Add(add_button, 0, wx.ALL, 20)
+        self.choice = wx.Choice(self, choices=[])
+        add_sizer.Add(self.choice, 0, wx.CENTER | wx.RIGHT, 15)
 
         # Bind events to widgets
         open_button.Bind(wx.EVT_BUTTON, self.OpenFile)
@@ -275,13 +268,19 @@ class Gui(wx.Frame):
         # Set screen size
         self.SetSizeHints(500, 500)
         self.SetSize(600, 600)
-        self.SetSizer(self.main_sizer)
+        self.SetSizer(main_sizer)
         self.SetPosition((0, 39))
+
+    def clear_widgets(self):
+        self.switch_rows_sizer.Clear(True)
+        self.monitor_rows_sizer.Clear(True)
+        self.total_cycles_text.SetLabel(str(self.cycles_completed))
+        MyGLCanvas.instances = []
 
     def AddSwitch(self, switch_id, switch_state):
         """Add a switch to GUI."""
         switch_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.switches_sizer.Add(switch_sizer, 0, wx.CENTER | wx.ALL, 5)
+        self.switch_rows_sizer.Add(switch_sizer, 0, wx.CENTER | wx.ALL, 5)
         text = wx.StaticText(self, wx.ID_ANY, switch_id)
         switch_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 5)
         switch_radiobox = wx.RadioBox(self, wx.ID_ANY, "", choices=['0', '1'])
@@ -303,41 +302,32 @@ class Gui(wx.Frame):
         if not self.monitors:
             self.Error("Please open file before creating monitor.")
             return
+        
+        print("in create monitor")
 
         # Get which signal to add
         signal_int = self.choice.GetSelection()
         signal_name = self.all_signal_list[signal_int]
-
-        # Add the specified signal to the monitors dictionary.
         [device_id, output_id] = self.devices.get_signal_ids(signal_name)
-        monitor_device = self.devices.get_device(device_id)
-        if monitor_device is None:
-            return self.network.DEVICE_ABSENT
-        elif output_id not in monitor_device.outputs:
-            return self.monitors.NOT_OUTPUT
-        elif (device_id, output_id) in self.monitors.monitors_dictionary:
-            return self.monitors.MONITOR_PRESENT
-        else:
-            # If n simulation cycles have been completed before making this
-            # monitor, then initialise the signal trace with an n-length list
-            # of BLANK signals. Otherwise, initialise the trace with an empty
-            # list.
-            self.monitors.monitors_dictionary[(device_id, output_id)] = [
-                self.devices.BLANK] * self.cycles_completed
+
+        monitor_error = self.monitors.make_monitor(device_id, output_id, self.cycles_completed)
+        if monitor_error == self.monitors.NO_ERROR:
+            print("Successfully made monitor.")
             # Add to gui
             self.AddMonitor(signal_name)
-            return self.NO_ERROR
+        else:
+            print("Error! Could not make monitor.")
 
     def AddMonitor(self, signal_name):
         """Add a monitor that already exists to GUI."""
         monitor_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        pos = len(self.monitors_sizer.GetChildren()) - 1
+        pos = len(self.monitor_rows_sizer.GetChildren())
 
-        self.monitors_sizer.Insert(pos, monitor_sizer, 0, wx.EXPAND, 0)
+        self.monitor_rows_sizer.Add(monitor_sizer, 0, wx.EXPAND, 0)
         minus_image = wx.ArtProvider.GetBitmap(wx.ART_MINUS)
         zap_button = wx.BitmapButton(self.scrolled_panel, wx.ID_ANY, minus_image)
         text = wx.StaticText(self.scrolled_panel, wx.ID_ANY, signal_name)
-        text.SetMinSize((60, -1))
+        text.SetMinSize((100, -1))
         monitor_sizer.Add(zap_button, 0, wx.CENTER | wx.ALL, 20)
         monitor_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 10)
         self.canvas = MyGLCanvas(self.scrolled_panel, signal_name)
@@ -356,7 +346,7 @@ class Gui(wx.Frame):
         [device, port] = self.devices.get_signal_ids(signal_name)
         if self.monitors.remove_monitor(device, port):
             # Remove from GUI
-            self.lower_sizer.GetChildren()[pos].DeleteWindows()
+            self.monitor_rows_sizer.GetChildren()[pos].DeleteWindows()
             self.scrolled_panel.FitInside()
             self.Layout()
         else:
@@ -372,6 +362,8 @@ class Gui(wx.Frame):
             return
         self.path = openFileDialog.GetPath()
         print("File chosen =", self.path)
+        self.cycles_completed = 0
+        self.clear_widgets()
         self.init_sim()
 
     def init_sim(self):
@@ -435,6 +427,8 @@ class Gui(wx.Frame):
 
     def Run(self, event):
         """Run the simulation from scratch."""
+        self.cycles_completed = 0
+        self.clear_widgets()
         self.init_sim()
         self.run_network()
 
