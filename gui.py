@@ -61,6 +61,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         # Bind events to the canvas
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_SIZE, self.on_size)
+        self.monitors_dictionary = None
 
     def init_gl(self):
         """Configure and initialise the OpenGL context."""
@@ -78,6 +79,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
     def render_signal(self, monitors_dictionary, devices, cycles_completed):
         """Render the latest simulation."""
         self.monitors_dictionary = monitors_dictionary
+        print("Setting monitors_dictionary:", monitors_dictionary)
         self.devices = devices
         self.render()
         self.parent.on_run(cycles_completed)
@@ -98,7 +100,12 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             [device_id, output_id] = \
                 self.devices.get_signal_ids(self.monitor_name)
             print(self.monitors_dictionary)
-            signal_list = self.monitors_dictionary[(self.names.get_name_string(device_id), output_id)]
+            # search_name = (self.monitor_name, output_id)
+            signal_list = self.monitors_dictionary[self.monitor_name, output_id]
+            # signal_list = self.monitors_dictionary[(device_id, output_id)]
+
+            print("Monitors Dictionary Keys:", self.monitors_dictionary)
+            # print("Expected Key:", search_name)
 
             # Draw a sample signal trace
             GL.glColor3f(0.0, 0.0, 1.0)  # signal trace is blue
@@ -130,6 +137,9 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             GL.glEnd()
         except (AttributeError):  # this is the wrong error to catch
             pass
+
+
+
 
         # We have been drawing to the back buffer, flush the graphics pipeline
         # and swap the back buffer to the front
@@ -426,6 +436,7 @@ class Gui(wx.Frame):
 
         Return True if successful.
         """
+        print(f"DEBUG: Before simulation - monitors: {len(self.monitors.monitors_dictionary)}")
         for _ in range(cycles):
             if self.network.execute_network():
                 self.monitors.record_signals()
@@ -436,6 +447,7 @@ class Gui(wx.Frame):
         for canvas in MyGLCanvas.instances:
             canvas.render_signal(self.monitors.monitors_dictionary,
                                  self.devices, self.cycles_completed)
+        print(f"DEBUG: After simulation - monitors: {len(self.monitors.monitors_dictionary)}")
 
         return True
 
