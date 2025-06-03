@@ -75,7 +75,7 @@ class Scanner:
         
     
     def _skip_whitespace(self):
-        """Calls _advance until the first character is not whitespace or a new line."""
+        """Calls _advance until the first character is not whitespace or a new line, so as to skip whitespace."""
         exit = 0
         while exit == 0:
             if self.current_character not in [" ", "\n"]:
@@ -84,16 +84,20 @@ class Scanner:
                 self._advance()
 
     def _skip_comment(self):
-        """skip comment by detecting and remove the line starting with the comment symbol '#'"""
+        """skip comment by detecting and remove the line starting with the comment symbol '#' and ending with symbol '#'."""
         exit = 0
         while exit == 0:
             self._advance()
             if self.current_character == "#":
                 self._advance()
                 exit = 1
+            # if end of file is reached, exit the loop
+            elif self.current_character == "":
+                print("Error: comment not closed.")
+                exit = 1
 
     def _get_string(self):
-        """get the string (seperate by space)"""
+        """Calls it when the current character is a letter, and returns the whole string of characters until a non-letter character is encountered."""
         string = ""
         exit = 0 
         while exit == 0:
