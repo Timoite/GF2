@@ -82,7 +82,6 @@ class Parser:
                 pass
             else:
                 current_line = current_line + next_symbol
-        print(error_type)
         if stopping_symbol == "standard":
             while not (self.symbol.type == self.scanner.COMMA
                        or self.symbol.type == self.scanner.KEYWORD
@@ -565,7 +564,7 @@ class Parser:
         self._connections_list()
         self._monitors_list()
         if self.error_count == 0:
-            print("Parsed!")
+            print("File parsed successfully")
             return True
         else:
             return False
