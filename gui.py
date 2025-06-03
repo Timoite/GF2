@@ -63,7 +63,6 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         self.Bind(wx.EVT_SIZE, self.on_size)
         self.monitors_dictionary = None
 
-
     def init_gl(self):
         """Configure and initialise the OpenGL context."""
         size = self.GetClientSize()
@@ -101,7 +100,8 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         try:
             [device_id, output_id] = \
                 self.devices.get_signal_ids(self.monitor_name)
-            signal_list = self.monitors_dictionary[self.monitor_name, output_id]
+            signal_list = self.monitors_dictionary[self.monitor_name,
+                                                   output_id]
 
             i = 0
             y_HIGH = 40
@@ -111,8 +111,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             if scalef < 1:
                 GL.glScalef(scalef, 1.0, 1.0)
 
-            # Draw a sample signal trace
-            GL.glColor3f(0.0, 0.0, 1.0)  # signal trace is blue
+            GL.glColor3f(1.0, 0.0, 0.0)  # signal trace is red
             GL.glBegin(GL.GL_LINE_STRIP)
             for signal in signal_list:
                 x = (i * dx) + 0.5 * dx
@@ -188,7 +187,8 @@ class Gui(wx.Frame):
         upper_sizer = wx.BoxSizer(wx.HORIZONTAL)
         lower_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
         main_sizer.Add(upper_sizer, 0, wx.EXPAND | wx.ALL, 10)
-        main_sizer.Add(lower_sizer, 0, wx.EXPAND | wx.LEFT | wx.BOTTOM | wx.RIGHT, 10)
+        main_sizer.Add(lower_sizer, 0,
+                       wx.EXPAND | wx.LEFT | wx.BOTTOM | wx.RIGHT, 10)
 
         io_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
         switches_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
@@ -272,9 +272,9 @@ class Gui(wx.Frame):
         self.SetPosition((0, 39))
 
     def clear_widgets(self):
+        """Clear the switches and monitors form the gui."""
         self.switch_rows_sizer.Clear(True)
         self.monitor_rows_sizer.Clear(True)
-        self.total_cycles_text.SetLabel(str(self.cycles_completed))
         MyGLCanvas.instances = []
 
     def AddSwitch(self, switch_id, switch_state):
@@ -308,7 +308,8 @@ class Gui(wx.Frame):
         signal_name = self.all_signal_list[signal_int]
         [device_id, output_id] = self.devices.get_signal_ids(signal_name)
 
-        monitor_error = self.monitors.make_monitor(device_id, output_id, self.cycles_completed)
+        monitor_error = self.monitors.make_monitor(
+            device_id, output_id, self.cycles_completed)
         if monitor_error == self.monitors.NO_ERROR:
             print("Successfully made monitor.")
             # Add to gui
@@ -323,7 +324,8 @@ class Gui(wx.Frame):
 
         self.monitor_rows_sizer.Add(monitor_sizer, 0, wx.EXPAND, 0)
         minus_image = wx.ArtProvider.GetBitmap(wx.ART_MINUS)
-        zap_button = wx.BitmapButton(self.scrolled_panel, wx.ID_ANY, minus_image)
+        zap_button = wx.BitmapButton(
+            self.scrolled_panel, wx.ID_ANY, minus_image)
         text = wx.StaticText(self.scrolled_panel, wx.ID_ANY, signal_name)
         text.SetMinSize((100, -1))
         monitor_sizer.Add(zap_button, 0, wx.CENTER | wx.ALL, 20)
@@ -361,11 +363,12 @@ class Gui(wx.Frame):
         self.path = openFileDialog.GetPath()
         print("File chosen =", self.path)
         self.cycles_completed = 0
+        self.total_cycles_text.SetLabel(str(self.cycles_completed))
         self.clear_widgets()
         self.init_sim()
 
     def init_sim(self):
-
+        """Start a new simulation."""
         # Initialise instances of the four inner simulator classes
         self.names = Names()
         self.devices = Devices(self.names)
@@ -426,6 +429,7 @@ class Gui(wx.Frame):
     def Run(self, event):
         """Run the simulation from scratch."""
         self.cycles_completed = 0
+        self.total_cycles_text.SetLabel(str(self.cycles_completed))
         self.clear_widgets()
         self.init_sim()
         self.run_network()
@@ -436,11 +440,11 @@ class Gui(wx.Frame):
             self.Error("Nothing to continue. Please run first.")
         else:
             self.run_network()
-        
 
     def Error(self, error_msg):
         """Create error box."""
         wx.MessageBox(error_msg, 'Error', wx.OK | wx.ICON_ERROR)
 
     def Quit(self, event):
+        """Exit the program."""
         sys.exit()
