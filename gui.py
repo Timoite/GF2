@@ -63,6 +63,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         self.Bind(wx.EVT_SIZE, self.on_size)
         self.monitors_dictionary = None
 
+
     def init_gl(self):
         """Configure and initialise the OpenGL context."""
         size = self.GetClientSize()
@@ -76,13 +77,14 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GL.glMatrixMode(GL.GL_MODELVIEW)
         GL.glLoadIdentity()
 
+        self.initial_size = self.GetClientSize()
+
     def render_signal(self, monitors_dictionary, devices, cycles_completed):
         """Render the latest simulation."""
         self.monitors_dictionary = monitors_dictionary
-        print("Setting monitors_dictionary:", monitors_dictionary)
         self.devices = devices
+        self.cycles_completed = cycles_completed
         self.render()
-        self.parent.on_run(cycles_completed)
 
     def render(self):
         """Handle all drawing operations."""
@@ -99,23 +101,22 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         try:
             [device_id, output_id] = \
                 self.devices.get_signal_ids(self.monitor_name)
-            print(self.monitors_dictionary)
-            # search_name = (self.monitor_name, output_id)
             signal_list = self.monitors_dictionary[self.monitor_name, output_id]
-            # signal_list = self.monitors_dictionary[(device_id, output_id)]
 
-            print("Monitors Dictionary Keys:", self.monitors_dictionary)
-            # print("Expected Key:", search_name)
+            i = 0
+            y_HIGH = 40
+            y_LOW = 20
+            dx = 8
+            scalef = (self.initial_size.width-2*dx)/(self.cycles_completed*dx)
+            if scalef < 1:
+                GL.glScalef(scalef, 1.0, 1.0)
 
             # Draw a sample signal trace
             GL.glColor3f(0.0, 0.0, 1.0)  # signal trace is blue
             GL.glBegin(GL.GL_LINE_STRIP)
-            i = 0
-            y_HIGH = 40
-            y_LOW = 20
             for signal in signal_list:
-                x = (i * 20) + 10
-                x_next = (i * 20) + 30
+                x = (i * dx) + 0.5 * dx
+                x_next = (i * dx) + dx
                 if signal == self.devices.HIGH:
                     y = y_HIGH
                     y_next = y_HIGH
@@ -135,11 +136,12 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 GL.glVertex2f(x_next, y_next)
                 i += 1
             GL.glEnd()
-        except (AttributeError):  # this is the wrong error to catch
+
+            if scalef < 1:
+                GL.glScalef(1/scalef, 1.0, 1.0)
+        # if the sim has not been run yet
+        except AttributeError:
             pass
-
-
-
 
         # We have been drawing to the back buffer, flush the graphics pipeline
         # and swap the back buffer to the front
@@ -162,46 +164,6 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         self.SetCurrent(self.context)
         GL.glViewport(0, 0, size.width, size.height)
         event.Skip()
-
-
-class ScrollableGLPanel(wx.ScrolledWindow):
-    """The scrollable canvas to render signals on."""
-
-    def __init__(self, parent, signal_name, cycles_completed):
-        """Initialise canvas properties and useful variables."""
-        super().__init__(parent, style=wx.HSCROLL)
-        self.parent = parent
-        virtual_size = [self.parent.GetSize()[0]-195, 60]
-        self.SetScrollbars(1, 1, virtual_size[0], virtual_size[1])
-
-        self.canvas = MyGLCanvas(self, signal_name)
-        self.canvas.SetSize(virtual_size)
-
-        self.Bind(wx.EVT_SCROLLWIN, self.on_scroll)
-        self.Bind(wx.EVT_SIZE, self.on_resize)
-
-        self.on_run(cycles_completed)
-
-    def on_scroll(self, event):
-        """Move the canvas to follow scroll position."""
-        x, y = self.GetViewStart()
-        self.canvas.SetPosition((-x, -y))
-        self.canvas.Refresh(False)
-        event.Skip()
-
-    def on_run(self, cycles_completed):
-        """Resizes the canvas to the new length of the signal."""
-        self.cycles_completed = cycles_completed
-        self.on_resize(None)
-
-    def on_resize(self, event):
-        """Refresh scroll position when resized."""
-        virtual_size = [max(self.parent.GetSize()[0]-196,
-                            (self.cycles_completed+2)*20), 60]
-        self.canvas.SetSize(virtual_size)
-        self.SetScrollbars(1, 1, virtual_size[0], virtual_size[1])
-        x, y = self.GetViewStart()
-        self.canvas.SetPosition((-x, -y))
 
 class Gui(wx.Frame):
     """Configure the main window and all the widgets.
@@ -368,9 +330,8 @@ class Gui(wx.Frame):
         text.SetMinSize((60, -1))
         monitor_sizer.Add(zap_button, 0, wx.CENTER | wx.ALL, 20)
         monitor_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 10)
-        self.scroll_gl = ScrollableGLPanel(
-            self.scrolled_panel, signal_name, self.cycles_completed)
-        monitor_sizer.Add(self.scroll_gl, 1, wx.EXPAND | wx.CENTER | wx.ALL, 5)
+        self.canvas = MyGLCanvas(self.scrolled_panel, signal_name)
+        monitor_sizer.Add(self.canvas, 1, wx.EXPAND | wx.CENTER | wx.ALL, 5)
 
         self.scrolled_panel.FitInside()
         self.Layout()
@@ -431,12 +392,18 @@ class Gui(wx.Frame):
         for monitored_signal_name in monitored_signal_list:
             self.AddMonitor(monitored_signal_name)
 
-    def run_network(self, cycles):
+    def run_network(self):
         """Run the network for the specified number of simulation cycles.
 
         Return True if successful.
         """
-        print(f"DEBUG: Before simulation - monitors: {len(self.monitors.monitors_dictionary)}")
+        # Handle the case that no file has yet been opened
+        if not self.monitors:
+            self.Error("Please open a file first")
+            return
+
+        cycles = self.spin.GetValue()
+
         for _ in range(cycles):
             if self.network.execute_network():
                 self.monitors.record_signals()
@@ -444,43 +411,27 @@ class Gui(wx.Frame):
                 self.Error("Network oscillating.")
                 return False
 
+        self.cycles_completed += cycles
+        self.total_cycles_text.SetLabel(str(self.cycles_completed))
+
         for canvas in MyGLCanvas.instances:
             canvas.render_signal(self.monitors.monitors_dictionary,
                                  self.devices, self.cycles_completed)
-        print(f"DEBUG: After simulation - monitors: {len(self.monitors.monitors_dictionary)}")
 
         return True
 
     def Run(self, event):
         """Run the simulation from scratch."""
-        # Handle the case that no file has yet been opened
-        if not self.monitors:
-            self.Error("Please open a file before running.")
-            return
-
         self.cycles_completed = 0
-        cycles = self.spin.GetValue()
-        if cycles is not None:  # if number of cycles valid
-            self.monitors.reset_monitors()
-            self.devices.cold_startup()
-            if self.run_network(cycles):
-                self.cycles_completed += cycles
-                self.total_cycles_text.SetLabel(str(self.cycles_completed))
+        self.run_network()
 
     def Continue(self, event):
         """Continue a previously run simulation."""
-        # Handle the case that no file has yet been opened
-        if not self.monitors:
-            self.Error("Please open a file before continuing.")
-            return
-
-        cycles = self.spin.GetValue()
-        if cycles is not None:  # if the number of cycles provided is valid
-            if self.cycles_completed == 0:
-                self.Error("Nothing to continue. Please run first.")
-            elif self.run_network(cycles):
-                self.cycles_completed += cycles
-                self.total_cycles_text.SetLabel(str(self.cycles_completed))
+        if self.cycles_completed == 0:
+            self.Error("Nothing to continue. Please run first.")
+        else:
+            self.run_network()
+        
 
     def Error(self, error_msg):
         """Create error box."""
