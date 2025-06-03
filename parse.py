@@ -41,7 +41,7 @@ class Parser:
         self.monitors = monitors
         self.names = names
 
-        self.error_list = [self.MISSING_ARROW_COMMA_DASH_OR_EQUALS, self.MISSING_ARROW_COMMA_OR_EQUALS,
+        self.error_list = [self.MISSING_ARROW_COMMA_DASH_EQUALS_OR_KEYWORD, self.MISSING_ARROW_COMMA_OR_EQUALS,
                            self.MISSING_ARROW_DASH_OR_COMMA, self.MISSING_STRING,
                            self.MISSING_INTEGER, self.MISSING_ARROW,
                            self.MISSING_EQUALS, self.NOT_DEVICE_NAME,
@@ -58,8 +58,8 @@ class Parser:
 
     def _error(self, error_type, stopping_symbol):
         self.error_count += 1
-        if error_type == self.MISSING_ARROW_COMMA_DASH_OR_EQUALS:
-            print("Error: expected an arrow, comma, dash or equals symbol.")
+        if error_type == self.MISSING_ARROW_COMMA_DASH_EQUALS_OR_KEYWORD:
+            print("Error: expected an arrow, comma, dash or equals symbol, or a keyword.")
         elif error_type == self.MISSING_ARROW_COMMA_OR_EQUALS:
             print("Error: expected a right arrow or equals symbol.")
         elif error_type == self.MISSING_ARROW_DASH_OR_COMMA:
@@ -128,8 +128,9 @@ class Parser:
             name = name + self.names.get_name_string(self.symbol.id)
             self.symbol = self.scanner.get_symbol()
         if not (self.symbol.type == self.scanner.EQUALS or self.symbol.type == self.scanner.DASH
-                or self.symbol.type == self.scanner.COMMA or self.symbol.type == self.scanner.ARROW):
-            self._error(self.MISSING_ARROW_COMMA_DASH_OR_EQUALS, "standard")
+                or self.symbol.type == self.scanner.COMMA or self.symbol.type == self.scanner.ARROW
+                or self.symbol.type == self.scanner.KEYWORD):
+            self._error(self.MISSING_ARROW_COMMA_DASH_EQUALS_OR_KEYWORD, "standard")
         else:
             return name
         
@@ -239,6 +240,7 @@ class Parser:
         if self.symbol.type == self.scanner.EQUALS:
             self.symbol = self.scanner.get_symbol()
             port = self._signalID()
+            print("A")
         else:
             self._error(self.MISSING_EQUALS, "standard") 
         if self.error_count == 0:
@@ -283,7 +285,9 @@ class Parser:
         """Parse the circuit definition file."""
         self.error_count = 0
         self._devices_list()
+        print("DEVICES")
         self._connections_list()
+        print("CONNECTIONS")
         self._monitors_list()
         if self.error_count == 0:
             print("Parsed!")

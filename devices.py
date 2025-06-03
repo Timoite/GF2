@@ -185,13 +185,13 @@ class Devices:
         """
         device = self.get_device(device_id)
         if device is not None:
-            device_name = self.names.get_name_string(device_id)
             if port_id is None:
+                device_name = device_id
                 signal_name = device_name
                 return signal_name
             elif port_id in device.outputs or port_id in device.inputs:
                 port_name = self.names.get_name_string(port_id)
-                signal_name = ".".join([device_name, port_name])
+                signal_name = ".".join([device_id, port_name])
                 return signal_name
             else:
                 return None
