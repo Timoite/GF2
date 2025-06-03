@@ -11,7 +11,6 @@ Symbol - encapsulates a symbol and stores its properties.
 
 
 class Symbol:
-
     """Encapsulate a symbol and store its properties.
 
     Parameters
@@ -30,7 +29,6 @@ class Symbol:
 
 
 class Scanner:
-
     """Read circuit definition file and translate the characters into symbols.
 
     Once supplied with the path to a valid definition file, the scanner
@@ -51,12 +49,6 @@ class Scanner:
 
     def __init__(self, path, names):
         """Open specified file and initialise reserved words and IDs."""
-
-        self.names = names
-        
-        # Initialize character reading
-        self.current_character = ""
-
         # Checks file handling error
         print("\nNow opening file...")
         print("Path: " + path)
@@ -64,117 +56,142 @@ class Scanner:
             file = open(path, "r")
         except FileNotFoundError:
             print("Error: file not found.")
-        self.contents = file.read()
+        conte = file.read()
+        self.contents = list(conte)
+        print("File opened successfully.")
         file.close()
         self.names = names
-        self.symbol_type_list = [self.KEYWORD, self.DEVICE_TYPE, self.STRING, self.INTEGER,
-                                  self.COMMA, self.ARROW, self.EQUALS, self.SLASH, self.DASH, self.UNDERSCORE] = range(10)
-        self.keywords_list = ["DEVICES", "CONNECTIONS", "MONITORS", "END"]
-        self.device_list = ["AND", "OR", "NAND", "NOR", "CLOCK", "SWITCH", "DTYPE"]
+        self.symbol_type_list = [
+            self.KEYWORD, self.DEVICE_TYPE, self.STRING,
+            self.INTEGER, self.COMMA, self.ARROW,
+            self.EQUALS, self.SLASH, self.DASH,
+            self.UNDERSCORE, self.EOF
+        ] = range(11)
+        self.keywords_list = [
+            "DEVICES", "CONNECTIONS",
+            "MONITORS", "END"
+        ]
+        self.device_list = [
+            "AND", "OR", "NAND", "NOR",
+            "XOR", "CLOCK", "SWITCH", "DTYPE"
+        ]
 
         # Look up ID from names
-        [self.DEVICES_ID, self.CONNECTIONS_ID, self.MONITORS_ID, self.END_ID] = self.names.lookup(self.keywords_list)
-        [self.AND_ID, self.OR_ID, self.NAND_ID, self.NOR_ID, self.CLOCK_ID, self.SWITCH_ID, self.DTYPE_ID] = self.names.lookup(self.device_list)
-        self.current_character = ""
-        
-    
+        [self.DEVICES_ID, self.CONNECTIONS_ID,
+         self.MONITORS_ID, self.END_ID] = \
+            self.names.lookup(self.keywords_list)
+        [self.AND_ID, self.OR_ID, self.NAND_ID,
+         self.NOR_ID, self.XOR_ID, self.CLOCK_ID,
+         self.SWITCH_ID, self.DTYPE_ID] = \
+            self.names.lookup(self.device_list)
+        self._advance()
+
     def _skip_whitespace(self):
-        """Calls _advance until the first character is not whitespace or a new line."""
-        exit = 0
-        while exit == 0:
+        """Skip whitespace and newlines in the file contents."""
+        while True:
+            if self.current_character not in [" ", "\n"]:
+                break
             self._advance()
-            if self.current_character not in [" ", "/n"]:
-                exit = 1
 
     def _skip_comment(self):
-        """skip comment by detecting and remove the line starting with the comment symbol '#'"""
-        exit = 0
-        while exit == 0:
+        """Skip a comment line starting and ending with '#'."""
+        while True:
             self._advance()
             if self.current_character == "#":
                 self._advance()
-                exit = 1
+                break
+            elif self.current_character == "":
+                # Prints an error if the comment is not closed.
+                print("Error: comment not closed.")
+                break
 
     def _get_string(self):
-        """get the string (seperate by space)"""
-        string = self.current_character
-        exit = 0 
-        while exit == 0:
-            self._advance()
+        """Return a string of consecutive letters.
+
+        Skips comments if encountered.
+        """
+        string = ""
+        while True:
+            # Skip comments if encountered
             if self.current_character == "#":
                 self._skip_comment()
             elif self.current_character.isalpha():
-                string = string + self.current_character
-            else:
-                exit = 1
+                string += self.current_character
+                self._advance()
+            else:  # Stop at the first non-letter character
+                break
         return string
 
-
     def _get_integer(self):
-        '''As with _get_string, but with digits instead of characters.'''
+        """Return a string of consecutive digits.
+
+        Skips comments if encountered.
+        """
         integer = self.current_character
-        exit = 0 
-        while exit == 0:
+        while True:
             self._advance()
             if self.current_character == "#":
                 self._skip_comment()
             elif self.current_character.isdigit():
-                integer = integer + self.current_character
+                integer += self.current_character
             else:
-                exit = 1
+                break
         return integer
-    # As with __get_string, but with digits instead of characters.
 
     def _advance(self):
-        '''Used to _advance to the next character when the current character has been analyzed.'''
+        """Advance to the next character in the file contents."""
         self.current_character = self.contents[0]
-        self.contents = self.contents[1]
+        self.contents = self.contents[1:]
 
     def get_symbol(self):
         """Translate the next sequence of characters into a symbol."""
+        # Create a new symbol to return
         symbol = Symbol()
         self._skip_whitespace()
-
-        # we also need a comment handling if we allow comment 
-        self._skip_comment()
-
+        # we also need a comment handling if we allow comment
+        if self.current_character == "#":
+            self._skip_comment()
         self._skip_whitespace()
-
-        if self.current_character.isalpha(): # string
+        if self.current_character.isalpha():  # string
             string = self._get_string()
             if string in self.keywords_list:
                 symbol.type = self.KEYWORD
+            elif string in self.device_list:
+                symbol.type = self.DEVICE_TYPE
             else:
                 symbol.type = self.STRING
-            symbol.id = self.names.lookup(string)
-        elif self.current_character.isdigit(): # integer
-            symbol.id = self._get_integer()
+            symbol.id = self.names.lookup([string])[0]
+        elif self.current_character.isdigit():  # integer
+            integer = self._get_integer()
+            symbol.id = self.names.lookup([integer])[0]
             symbol.type = self.INTEGER
-        elif self.current_character == "=": # punctuation
+        elif self.current_character == "=":  # punctuation
             symbol.type = self.EQUALS
+            symbol.id = self.names.lookup(self.current_character)[0]
             self._advance()
-        elif self.current_character == "-": # punctuation
+        elif self.current_character == "-":  # punctuation
             symbol.type = self.DASH
+            symbol.id = self.names.lookup(self.current_character)[0]
             self._advance()
-        elif self.current_character == "/": # punctuation
+        elif self.current_character == "/":  # punctuation
             symbol.type = self.SLASH
+            symbol.id = self.names.lookup(self.current_character)[0]
             self._advance()
-        elif self.current_character == ",": # punctuation
+        elif self.current_character == ",":  # punctuation
             symbol.type = self.COMMA
+            symbol.id = self.names.lookup(self.current_character)[0]
             self._advance()
-        elif self.current_character == ">": # punctuation
+        elif self.current_character == ">":  # punctuation
             symbol.type = self.ARROW
+            symbol.id = self.names.lookup(self.current_character)[0]
             self._advance()
-        elif self.current_character == "_": # punctuation
+        elif self.current_character == "_":  # punctuation
             symbol.type = self.UNDERSCORE
+            symbol.id = self.names.lookup(self.current_character)[0]
             self._advance()
-        elif self.current_character == "": # end of file
+        elif self.current_character == "":  # end of file
             symbol.type = self.EOF
-        else: # not a valid character
+            symbol.id = self.names.lookup(self.current_character)[0]
+        else:  # not a valid character
             self._advance()
-            # Recursively call another one?
-            return self.get_symbol()
-        
         return symbol
-
-

@@ -1,0 +1,5 @@
+__pycache__/*
+.pytest_cache/
+__pycache__/monitors.cpython-310.pyc
+__pycache__/network.cpython-310.pyc
+__pycache__/parse.cpython-310.pyc

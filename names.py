@@ -10,7 +10,6 @@ Names - maps variable names and string names to unique integers.
 
 
 class Names:
-
     """Map variable names and string names to unique integers.
 
     This class deals with storing grammatical keywords and user-defined words,
@@ -46,48 +45,35 @@ class Names:
 
     def unique_error_codes(self, num_error_codes):
         """Return a list of unique integer error codes."""
-
         # num_error_codes is a positive integer
         if isinstance(num_error_codes, int) and num_error_codes < 1:
-            raise ValueError("Number of error codes must be a positive integer.")
+            raise ValueError(
+                "Number of error codes must be a positive integer.")
         codes = []
-
         # loop through the number of error and assign them unique codes
         for i in range(num_error_codes):
-
             # error code count may not be 0 initially, so accumulate on it
             code = self.error_code_count + i
-            
-            '''
-            # it is unlikely that the error code as long as error_code_count matches the number of error in the dict.
-            if code in self.names_dict: # check if code already exists
-                raise ValueError(f"Error code {code} already exists.")
-            '''
-
             codes.append(code)
-        
         # update the error code count
         self.error_code_count += num_error_codes
-
         # update the error codes to the names list and dict
         for code in codes:
             if code not in self.names_dict:
                 self.names.append(code)
-                self.names_dict[code] = len(self.names) - 1 # matches the id definition below
-
+                # matches the id definition below
+                self.names_dict[code] = len(self.names) - 1
         return codes
-        
 
     def query(self, name_string):
         """Return the corresponding name ID for name_string.
 
-        If the name string is not present in the names list, return None.
+        Return None if the name string is not present in the names list
         """
         if name_string in self.names_dict:
             return self.names_dict[name_string]
         else:
             return None
-
 
     def lookup(self, name_string_list):
         """Return a list of name IDs for each name string in name_string_list.
@@ -115,5 +101,3 @@ class Names:
             return None
         else:
             return self.names[name_id]
-        
-
