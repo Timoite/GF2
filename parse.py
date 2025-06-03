@@ -56,8 +56,25 @@ class Parser:
                            self.devices.DEVICE_PRESENT, self.devices.NO_QUALIFIER,
                            self.monitors.NOT_OUTPUT, self.monitors.MONITOR_PRESENT] = range(29)
 
-    def _error(self, error_type, stopping_symbol):
+    def _error(self, error_type, current_line, stopping_symbol):
+        arrow_pos = len(current_line)
+        arrow_str = ""
         self.error_count += 1
+        if stopping_symbol == "standard":
+            while not (self.symbol.type == self.scanner.COMMA or self.symbol.type == self.scanner.KEYWORD or self.symbol.type == self.scanner.EOF):
+                self.symbol = self.scanner.get_symbol()
+                current_line = current_line + str(self.symbol.id)
+            print("Error in line:")
+            print(current_line)
+            i = 0
+            while i < arrow_pos:
+                arrow_str = arrow_str + " "
+                i += 1
+            arrow_str = arrow_str + "^"
+            print(arrow_str)
+        elif stopping_symbol == "end":
+            while not self.symbol.ID == self.scanner.END_ID or self.symbol.ID == self.scanner.EOF:
+                self.symbol = self.scanner.get_symbol()
         if error_type == self.MISSING_ARROW_COMMA_DASH_EQUALS_OR_KEYWORD:
             print("Error: expected an arrow, comma, dash or equals symbol, or a keyword.")
         elif error_type == self.MISSING_ARROW_COMMA_OR_EQUALS:
@@ -75,126 +92,234 @@ class Parser:
         elif error_type == self.MISSING_EQUALS:
             print("Error: expected an equals symbol.")
         elif error_type == self.NOT_DEVICE_NAME or error_type == self.devices.BAD_DEVICE:
+            arrow_pos = self._seek_error(current_line, "=")
+            print("Error in line:")
+            print(current_line)
+            i = 0
+            while i < arrow_pos:
+                arrow_str = arrow_str + " "
+                i += 1
+            arrow_str = arrow_str + "^"
+            print(arrow_str)
             print("Error: This device type does not match any code known by this logic simulator. " \
             "Valid devices are AND, CLOCK, DTYPE, NAND, NOR, OR, SWITCH, XOR.")
         elif error_type == self.MISSING_COMMA:
             print("Error: expected a comma.")
         elif error_type == self.MISSING_DEVICES_HEADER:
-            print("Error: Missing the section header keyword for devices.")
+            print("Error in format: Missing the section header keyword for devices.")
         elif error_type == self.MISSING_CONNECTIONS_HEADER:
-            print("Error: Missing the section header keyword for connections.")
+            print("Error in format: Missing the section header keyword for connections.")
         elif error_type == self.MISSING_MONITORS_HEADER:
-            print("Error: Missing the section header keyword for monitors.")
+            print("Error in format: Missing the section header keyword for monitors.")
         elif error_type == self.MISSING_END_HEADER:
-            print("Error: Missing the end-of-file keyword.")
+            print("Error in format: Missing the end-of-file keyword.")
         elif error_type == self.network.INPUT_TO_INPUT:
             print("Error: A connection’s first port must be an output port.")
+            arrow_pos = self._seek_error(current_line, "=")
+            print("Error in line:")
+            print(current_line)
+            i = 0
+            while i < arrow_pos:
+                arrow_str = arrow_str + " "
+                i += 1
+            arrow_str = arrow_str + "^"
+            print(arrow_str)
         elif error_type == self.network.OUTPUT_TO_OUTPUT:
+            arrow_pos = self._seek_error(current_line, ">")
+            print("Error in line:")
+            print(current_line)
+            i = 0
+            while i < arrow_pos:
+                arrow_str = arrow_str + " "
+                i += 1
+            arrow_str = arrow_str + "^"
+            print(arrow_str)
             print("Error: A connection's second port must be an input port.")
         elif error_type == self.network.PORT_ABSENT:
             print("Error: The specified device does not have a port with this ID.")
-        elif error_type == self.network.DEVICE_ABSENT:
+        elif error_type == self.network.DEVICE_ABSENT or error_type == self.monitors.DEVICE_ABSENT:
             print("Error: No device with this ID has been defined.")
         elif error_type == self.network.INPUT_CONNECTED:
-            print("Error: There is already a connection to the specified input port.")
+            arrow_pos = self._seek_error(current_line, ">")
+            print("Error in line:")
+            print(current_line)
+            i = 0
+            while i < arrow_pos:
+                arrow_str = arrow_str + " "
+                i += 1
+            arrow_str = arrow_str + "^"
+            print(arrow_str)
+            print("Error: There is already a connection leading to the specified input port.")
         elif error_type == self.devices.ZERO_QUALIFIER:
+            arrow_pos = self._seek_error(current_line, "/")
+            print("Error in line:")
+            print(current_line)
+            i = 0
+            while i < arrow_pos:
+                arrow_str = arrow_str + " "
+                i += 1
+            arrow_str = arrow_str + "^"
+            print(arrow_str)
             print("Error: A CLOCK device’s qualifier must be a non-zero integer.")
         elif error_type == self.devices.INVALID_QUALIFIER:
+            arrow_pos = self._seek_error(current_line, "/")
+            print("Error in line:")
+            print(current_line)
+            i = 0
+            while i < arrow_pos:
+                arrow_str = arrow_str + " "
+                i += 1
+            arrow_str = arrow_str + "^"
+            print(arrow_str)
             print("Error: A SWITCH device may only have an qualifier of 0 or 1.")
         elif error_type == self.devices.QUALIFIER_OUT_OF_RANGE:
+            arrow_pos = self._seek_error(current_line, "/")
+            print("Error in line:")
+            print(current_line)
+            i = 0
+            while i < arrow_pos:
+                arrow_str = arrow_str + " "
+                i += 1
+            arrow_str = arrow_str + "^"
+            print(arrow_str)
             print("Error: The qualifier for this type of logic gate must be between 2 and 16.")
         elif error_type == self.devices.QUALIFIER_PRESENT:
+            arrow_pos = self._seek_error(current_line, "/")
+            print("Error in line:")
+            print(current_line)
+            i = 0
+            while i < arrow_pos:
+                arrow_str = arrow_str + " "
+                i += 1
+            arrow_str = arrow_str + "^"
+            print(arrow_str)
             print("Error: Devices of this type should not have a qualifier.")
         elif error_type == self.devices.DEVICE_PRESENT:
+            print("Error in line:")
+            print(current_line)
+            print("^")
             print("Error: A device with this ID has already been defined.")
         elif error_type == self.devices.NO_QUALIFIER:
             print("Error: This device type requires a qualifier.")
+            arrow_pos = self._seek_error(current_line, ",")
+            print("Error in line:")
+            print(current_line)
+            i = 0
+            while i < arrow_pos:
+                arrow_str = arrow_str + " "
+                i += 1
+            arrow_str = arrow_str + "^"
+            print(arrow_str)
         elif error_type == self.monitors.NOT_OUTPUT:
+            arrow_pos = self._seek_error(current_line, "=")
+            print("Error in line:")
+            print(current_line)
+            i = 0
+            while i < arrow_pos:
+                arrow_str = arrow_str + " "
+                i += 1
+            arrow_str = arrow_str + "^"
+            print(arrow_str)
             print("Error: The specified port is an input port or not defined." \
             " Monitors may only connect to output ports.")
         elif error_type == self.monitors.MONITOR_PRESENT:
+            arrow_pos = self._seek_error(current_line, "=")
+            print("Error in line:")
+            print(current_line)
+            i = 0
+            while i < arrow_pos:
+                arrow_str = arrow_str + " "
+                i += 1
+            arrow_str = arrow_str + "^"
+            print(arrow_str)
             print("Error: There is already a monitor connected to this output port.")
-        if stopping_symbol == "standard":
-            while not (self.symbol.type == self.scanner.COMMA or self.symbol.type == self.scanner.KEYWORD or self.symbol.type == self.scanner.EOF):
-                self.symbol = self.scanner.get_symbol()
-        elif stopping_symbol == "end":
-            while not self.symbol.ID == self.scanner.END_ID or self.symbol.ID == self.scanner.EOF:
-                self.symbol = self.scanner.get_symbol()
 
-    def _name(self):
+    def _seek_error(current_line,target):
+        return current_line.find(target)
+
+    def _name(self, current_line):
         name = ""
         while (self.symbol.type == self.scanner.STRING or self.symbol.type == self.scanner.INTEGER
                 or self.symbol.type == self.scanner.UNDERSCORE):
             name = name + self.names.get_name_string(self.symbol.id)
             self.symbol = self.scanner.get_symbol()
+        current_line = current_line + name
         if not (self.symbol.type == self.scanner.EQUALS or self.symbol.type == self.scanner.DASH
                 or self.symbol.type == self.scanner.COMMA or self.symbol.type == self.scanner.ARROW
                 or self.symbol.type == self.scanner.KEYWORD):
-            self._error(self.MISSING_ARROW_COMMA_DASH_EQUALS_OR_KEYWORD, "standard")
+            self._error(self.MISSING_ARROW_COMMA_DASH_EQUALS_OR_KEYWORD, current_line, "standard")
         else:
             return name
         
-    def _portID(self):
+    def _portID(self, current_line):
         portID = ""
         if self.symbol.type == self.scanner.STRING:
             portID = portID + self.names.get_name_string(self.symbol.id)
             self.symbol = self.scanner.get_symbol()
             if self.symbol.type == self.scanner.INTEGER:
                 portID = portID + self.names.get_name_string(self.symbol.id)
-                self.symbol = self.scanner.get_symbol()
+                if not self.symbol.id == self.scanner.END_ID:
+                    self.symbol = self.scanner.get_symbol()
+            current_line = current_line + portID
             if not (self.symbol.type == self.scanner.ARROW or self.symbol.type == self.scanner.COMMA or self.symbol.type == self.scanner.EQUALS or self.symbol.type == self.scanner.KEYWORD):
-                self._error(self.MISSING_ARROW_COMMA_OR_EQUALS, "standard")
+                self._error(self.MISSING_ARROW_COMMA_OR_EQUALS, current_line, "standard")
             else:
                 return portID
         else:
-            self._error(self.MISSING_STRING, "standard")
+            self._error(self.MISSING_STRING, current_line, "standard")
 
-    def _signalID(self):
-        deviceID = self._name()
+    def _signalID(self,current_line):
+        deviceID = self._name("")
+        current_line = current_line + deviceID
         if self.symbol.type == self.scanner.DASH:
             self.symbol = self.scanner.get_symbol()
-            portID = self._portID()
+            portID = self._portID(current_line)
             return [deviceID, portID]
         else:
             if not [self.symbol.type == self.scanner.COMMA or self.symbol.type == self.scanner.ARROW
                      or self.symbol.type == self.scanner.DASH or self.symbol.type == self.scanner.KEYWORD]:
-                self._error(self.MISSING_ARROW_DASH_OR_COMMA, "standard")
+                self._error(self.MISSING_ARROW_DASH_OR_COMMA, current_line, "standard")
             else:
                 return [deviceID, None]
             
-    def _devicetype(self):
+    def _devicetype(self, current_line):
         if self.symbol.type == self.scanner.DEVICE_TYPE:
             devicetype = self.names.get_name_string(self.symbol.id)
             self.symbol = self.scanner.get_symbol()
             return devicetype
         else:
-            self._error(self.NOT_DEVICE_NAME, "standard")
+            self._error(self.NOT_DEVICE_NAME, current_line, "standard")
     
     def _device(self):
-        deviceID = self._name()
+        deviceID = self._name("")
+        current_line = deviceID
         if self.symbol.type == self.scanner.EQUALS:
+            current_line = current_line + "="
             self.symbol = self.scanner.get_symbol()
-            device = self._devicetype()
+            device = self._devicetype(current_line)
+            current_line = current_line + device
             if self.symbol.type == self.scanner.SLASH:
+                current_line = current_line + "/"
                 self.symbol = self.scanner.get_symbol()
                 if self.symbol.type == self.scanner.INTEGER:
                     qualifier = int(self.names.get_name_string(self.symbol.id))
+                    current_line = current_line + str(qualifier)
                     self.symbol = self.scanner.get_symbol()
                 else:
-                    self._error(self.MISSING_INTEGER, "standard") 
+                    self._error(self.MISSING_INTEGER, current_line, "standard")
             elif self.symbol.type == self.scanner.COMMA:
-                self.symbol = self.scanner.get_symbol()
                 qualifier = None
+                current_line = current_line + ","
             elif self.symbol.type == self.scanner.KEYWORD:
                 qualifier = None
             else:
-                self._error(self.MISSING_SLASH_OR_COMMA, "standard") 
+                self._error(self.MISSING_SLASH_OR_COMMA, current_line, "standard") 
         else:
-            self._error(self.MISSING_EQUALS, "standard") 
+            self._error(self.MISSING_EQUALS, current_line, "standard") 
         if self.error_count == 0:
             error_type = self._make_device(device, deviceID, qualifier)
             if error_type != self.devices.NO_ERROR:
-                self._error(error_type, "standard")
+                self._error(error_type, current_line, "seek")
 
     def _make_device(self, device, deviceID, qualifier):
         if device in ["AND", "OR", "NAND", "NOR", "XOR"]:
@@ -219,34 +344,41 @@ class Parser:
         return error
 
     def _connection(self):
-        connectionID = self._name()
+        connectionID = self._name("")
+        current_line = connectionID
         if self.symbol.type == self.scanner.EQUALS:
+            current_line = current_line + "="
             self.symbol = self.scanner.get_symbol()
-            signal1 = self._signalID()
+            signal1 = self._signalID(current_line)
+            current_line = current_line + signal1[0]
             if self.symbol.type == self.scanner.ARROW:
+                current_line = current_line + ">"
                 self.symbol = self.scanner.get_symbol()
-                signal2 = self._signalID()
+                signal2 = self._signalID(current_line)
+                current_line = current_line + signal2[0]
             else:
-                self._error(self.MISSING_ARROW, "standard")
+                self._error(self.MISSING_ARROW, current_line, "standard")
         else:
-            self._error(self.MISSING_EQUALS, "standard") 
+            self._error(self.MISSING_EQUALS, current_line, "standard") 
         if self.error_count == 0:
             error_type = self.network.make_connection(signal1[0], signal1[1], signal2[0], self.devices.names.query(signal2[1]))
             if error_type != self.network.NO_ERROR:
-                self._error(error_type, "standard")
+                self._error(error_type, current_line, "seek")
     
     def _monitor(self):
-        monitorID = self._name()
+        monitorID = self._name("")
+        current_line = monitorID
         if self.symbol.type == self.scanner.EQUALS:
+            current_line = current_line + "="
             self.symbol = self.scanner.get_symbol()
-            port = self._signalID()
-            print("A")
+            port = self._signalID(current_line)
+            current_line = current_line + port[0]
         else:
-            self._error(self.MISSING_EQUALS, "standard") 
+            self._error(self.MISSING_EQUALS, current_line, "standard") 
         if self.error_count == 0:
             error_type = self.monitors.make_monitor(port[0], self.devices.names.query(port[1]))
             if error_type != self.monitors.NO_ERROR:
-                self._error(error_type, "standard")
+                self._error(error_type, current_line, "seek")
 
     def _devices_list(self):
         self.symbol = self.scanner.get_symbol()
@@ -257,7 +389,7 @@ class Parser:
                 self.symbol = self.scanner.get_symbol()
                 self._device()
         else:
-            self._error(self.MISSING_DEVICES_HEADER, "End")
+            self._error(self.MISSING_DEVICES_HEADER, None, "End")
 
     def _connections_list(self):
         if (self.symbol.type == self.scanner.KEYWORD and self.symbol.id == self.scanner.CONNECTIONS_ID):
@@ -267,7 +399,7 @@ class Parser:
                 self.symbol = self.scanner.get_symbol()
                 self._connection()
         else:
-            self._error(self.MISSING_CONNECTIONS_HEADER, "End")
+            self._error(self.MISSING_CONNECTIONS_HEADER, None, "End")
 
     def _monitors_list(self):
         if (self.symbol.type == self.scanner.KEYWORD and self.symbol.id == self.scanner.MONITORS_ID):
@@ -277,17 +409,15 @@ class Parser:
                 self.symbol = self.scanner.get_symbol()
                 self._monitor()
             if not (self.symbol.type == self.scanner.KEYWORD and self.symbol.id == self.scanner.END_ID):
-                self._error(self.MISSING_END_HEADER, "Stop")
+                self._error(self.MISSING_END_HEADER, None, "Stop")
         else:
-            self._error(self.MISSING_MONITORS_HEADER, "End")     
+            self._error(self.MISSING_MONITORS_HEADER, None, "End")     
     
     def parse_network(self):
         """Parse the circuit definition file."""
         self.error_count = 0
         self._devices_list()
-        print("DEVICES")
         self._connections_list()
-        print("CONNECTIONS")
         self._monitors_list()
         if self.error_count == 0:
             print("Parsed!")
