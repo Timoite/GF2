@@ -67,7 +67,7 @@ class Monitors:
         """
         monitor_device = self.devices.get_device(device_id)
         if monitor_device is None:
-            return self.network.DEVICE_ABSENT
+            return self.network.FIRST_DEVICE_ABSENT
         elif output_id not in monitor_device.outputs:
             return self.NOT_OUTPUT
         elif (device_id, output_id) in self.monitors_dictionary:
