@@ -69,7 +69,8 @@ class Parser:
                            self.devices.DEVICE_PRESENT,
                            self.devices.NO_QUALIFIER,
                            self.monitors.NOT_OUTPUT,
-                           self.monitors.MONITOR_PRESENT] = range(29)
+                           self.monitors.MONITOR_PRESENT,
+                           self.UNCONNECTED_INPUT] = range(30)
 
     def _error(self, error_type, current_line, next_symbol, stopping_symbol):
         if current_line is None:
@@ -82,7 +83,6 @@ class Parser:
                 pass
             else:
                 current_line = current_line + next_symbol
-        print(error_type)
         if stopping_symbol == "standard":
             while not (self.symbol.type == self.scanner.COMMA
                        or self.symbol.type == self.scanner.KEYWORD
@@ -313,6 +313,11 @@ class Parser:
             print(arrow_str)
             print("Error: There is already a monitor connected "
                   "to this output port.")
+        elif error_type == self.UNCONNECTED_INPUT:
+            print("This network contains at least one device "
+                  "with an unconnected input. If this input "
+                  "is meant to be unused, connect a switch "
+                  "with qualifier 0 to it.")
 
     def _seek_error(self, current_line, target):
         if target == "first":
@@ -549,12 +554,12 @@ class Parser:
                 self.symbol.id == self.scanner.MONITORS_ID):
             self.symbol = self.scanner.get_symbol()
             self._monitor()
-        while self.symbol.type == self.scanner.COMMA:
-            self.symbol = self.scanner.get_symbol()
-            self._monitor()
-        if not (self.symbol.type == self.scanner.KEYWORD and
-                self.symbol.id == self.scanner.END_ID):
-            self._error(self.MISSING_END_HEADER, None, None, "Stop")
+            while self.symbol.type == self.scanner.COMMA:
+                self.symbol = self.scanner.get_symbol()
+                self._monitor()
+            if not (self.symbol.type == self.scanner.KEYWORD and
+                    self.symbol.id == self.scanner.END_ID):
+                self._error(self.MISSING_END_HEADER, None, None, "Stop")
         else:
             self._error(self.MISSING_MONITORS_HEADER, None, None, "End")
 
@@ -564,11 +569,11 @@ class Parser:
         self._devices_list()
         self._connections_list()
         self._monitors_list()
+        if self.network.check_network() is False:
+            self._error(self.UNCONNECTED_INPUT, None, None, "Stop")
+            self.error_count += 1
         if self.error_count == 0:
-            print("Parsed!")
+            print("File parsed successfully")
             return True
         else:
             return False
-        # For now just return True, so that userint and gui can run in the
-        # skeleton code. When complete, should return False when there are
-        # errors in the circuit definition file.

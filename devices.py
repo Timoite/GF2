@@ -109,8 +109,9 @@ class Devices:
         dtype_inputs = ["CLK", "SET", "CLEAR", "DATA"]
         dtype_outputs = ["Q", "QBAR"]
 
-        [self.NO_ERROR, self.INVALID_QUALIFIER, self.ZERO_QUALIFIER, self.NO_QUALIFIER,
-         self.QUALIFIER_OUT_OF_RANGE, self.BAD_DEVICE, self.QUALIFIER_PRESENT,
+        [self.NO_ERROR, self.INVALID_QUALIFIER, self.ZERO_QUALIFIER,
+         self.NO_QUALIFIER, self.QUALIFIER_OUT_OF_RANGE,
+         self.BAD_DEVICE, self.QUALIFIER_PRESENT,
          self.DEVICE_PRESENT] = self.names.unique_error_codes(8)
 
         self.signal_types = [self.LOW, self.HIGH, self.RISING,
@@ -129,6 +130,7 @@ class Devices:
     def get_device(self, device_id):
         """Return the Device object corresponding to device_id."""
         for device in self.devices_list:
+            print(device.device_id)
             if device.device_id == device_id:
                 return device
         return None

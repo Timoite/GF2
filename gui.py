@@ -100,7 +100,11 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         try:
             [device_id, output_id] = \
                 self.devices.get_signal_ids(self.monitor_name)
-            signal_list = self.monitors_dictionary[self.monitor_name,
+            if "." in self.monitor_name:
+                device_name = self.monitor_name[:(self.monitor_name.find("."))]
+            else:
+                device_name = self.monitor_name
+            signal_list = self.monitors_dictionary[device_name,
                                                    output_id]
 
             i = 0
@@ -307,6 +311,7 @@ class Gui(wx.Frame):
         signal_int = self.choice.GetSelection()
         signal_name = self.all_signal_list[signal_int]
         [device_id, output_id] = self.devices.get_signal_ids(signal_name)
+        device_id = self.names.get_name_string(device_id)
 
         monitor_error = self.monitors.make_monitor(
             device_id, output_id, self.cycles_completed)
@@ -315,6 +320,7 @@ class Gui(wx.Frame):
             # Add to gui
             self.AddMonitor(signal_name)
         else:
+            print(self.names.get_name_string(monitor_error))
             print("Error! Could not make monitor.")
 
     def AddMonitor(self, signal_name):
@@ -344,6 +350,7 @@ class Gui(wx.Frame):
         """Remove the specified monitor."""
         # Remove from monitors
         [device, port] = self.devices.get_signal_ids(signal_name)
+        device = self.names.get_name_string(device)
         if self.monitors.remove_monitor(device, port):
             # Remove from GUI
             self.monitor_rows_sizer.GetChildren()[pos].DeleteWindows()

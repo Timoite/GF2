@@ -66,9 +66,11 @@ class Network:
         self.names = names
         self.devices = devices
 
-        [self.NO_ERROR, self.INPUT_TO_INPUT, self.OUTPUT_TO_OUTPUT,
-         self.INPUT_CONNECTED, self.FIRST_PORT_ABSENT, self.SECOND_PORT_ABSENT,
-         self.FIRST_DEVICE_ABSENT, self.SECOND_DEVICE_ABSENT] = self.names.unique_error_codes(8)
+        [self.NO_ERROR, self.INPUT_TO_INPUT,
+         self.OUTPUT_TO_OUTPUT, self.INPUT_CONNECTED,
+         self.FIRST_PORT_ABSENT, self.SECOND_PORT_ABSENT,
+         self.FIRST_DEVICE_ABSENT,
+         self.SECOND_DEVICE_ABSENT] = self.names.unique_error_codes(8)
         self.steady_state = True  # for checking if signals have settled
 
     def get_connected_output(self, device_id, input_id):
@@ -119,7 +121,7 @@ class Network:
 
         if first_device is None:
             error_type = self.FIRST_DEVICE_ABSENT
-        
+
         elif second_device is None:
             error_type = self.SECOND_DEVICE_ABSENT
 
@@ -245,7 +247,8 @@ class Network:
 
         if device.device_kind == self.devices.XOR:
             # Output is high only if both inputs are different
-            if input_signal_list[0] == input_signal_list[1]:  # assume two inputs
+            if input_signal_list[0] == input_signal_list[1]:
+                # assume two inputs
                 output_signal = self.devices.LOW
             else:
                 output_signal = self.devices.HIGH
