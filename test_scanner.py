@@ -57,10 +57,10 @@ def test_keywords(new_scanner):
 
 
 def test_non_alphabet(new_scanner):
-    """Should ignore symbols outside the accepted alphabet"""
+    """Should ignore symbols outside the accepted alphabet and return None as the type"""
     scanner = new_scanner("non_alphabet")
     symbol = scanner.get_symbol()
-    assert symbol.type == 3
+    assert symbol.type == None
 
 
 def test_comment(new_scanner):
