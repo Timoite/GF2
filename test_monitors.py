@@ -18,18 +18,18 @@ def new_monitors():
     [SW1_ID, SW2_ID, OR1_ID, I1, I2] = new_names.lookup(["Sw1", "Sw2", "Or1",
                                                         "I1", "I2"])
     # Add 2 switches and an OR gate
-    new_devices.make_device(SW1_ID, new_devices.SWITCH, 0)
-    new_devices.make_device(SW2_ID, new_devices.SWITCH, 0)
-    new_devices.make_device(OR1_ID, new_devices.OR, 2)
+    new_devices.make_device("Sw1", new_devices.SWITCH, 0)
+    new_devices.make_device("Sw2", new_devices.SWITCH, 0)
+    new_devices.make_device("Or1", new_devices.OR, 2)
 
     # Make connections
-    new_network.make_connection(SW1_ID, None, OR1_ID, I1)
-    new_network.make_connection(SW2_ID, None, OR1_ID, I2)
+    new_network.make_connection("Sw1", None, "Or1", I1)
+    new_network.make_connection("Sw2", None, "Or1", I2)
 
     # Set monitors
-    new_monitors.make_monitor(SW1_ID, None)
-    new_monitors.make_monitor(SW2_ID, None)
-    new_monitors.make_monitor(OR1_ID, None)
+    new_monitors.make_monitor("Sw1", None)
+    new_monitors.make_monitor("Sw2", None)
+    new_monitors.make_monitor("Or1", None)
 
     return new_monitors
 
@@ -39,9 +39,9 @@ def test_make_monitor(new_monitors):
     names = new_monitors.names
     [SW1_ID, SW2_ID, OR1_ID] = names.lookup(["Sw1", "Sw2", "Or1"])
 
-    assert new_monitors.monitors_dictionary == {(SW1_ID, None): [],
-                                                (SW2_ID, None): [],
-                                                (OR1_ID, None): []}
+    assert new_monitors.monitors_dictionary == {("Sw1", None): [],
+                                                ("Sw2", None): [],
+                                                ("Or1", None): []}
 
 
 def test_make_monitor_gives_errors(new_monitors):
@@ -53,17 +53,17 @@ def test_make_monitor_gives_errors(new_monitors):
                                                             "Or1", "I1",
                                                             "SWITCH"])
 
-    assert new_monitors.make_monitor(OR1_ID, I1) == new_monitors.NOT_OUTPUT
-    assert new_monitors.make_monitor(SW1_ID,
+    assert new_monitors.make_monitor("Or1", I1) == new_monitors.NOT_OUTPUT
+    assert new_monitors.make_monitor("Sw1",
                                      None) == new_monitors.MONITOR_PRESENT
     # I1 is not a device_id in the network
-    assert new_monitors.make_monitor(I1,
+    assert new_monitors.make_monitor("I1",
                                      None) == network.FIRST_DEVICE_ABSENT
 
     # Make a new switch device
-    devices.make_device(SW3_ID, SWITCH_ID, 0)
+    devices.make_device("Sw3", SWITCH_ID, 0)
 
-    assert new_monitors.make_monitor(SW3_ID, None) == new_monitors.NO_ERROR
+    assert new_monitors.make_monitor("Sw3", None) == new_monitors.NO_ERROR
 
 
 def test_remove_monitor(new_monitors):
@@ -71,9 +71,9 @@ def test_remove_monitor(new_monitors):
     names = new_monitors.names
     [SW1_ID, SW2_ID, OR1_ID] = names.lookup(["Sw1", "Sw2", "Or1"])
 
-    new_monitors.remove_monitor(SW1_ID, None)
-    assert new_monitors.monitors_dictionary == {(SW2_ID, None): [],
-                                                (OR1_ID, None): []}
+    new_monitors.remove_monitor("Sw1", None)
+    assert new_monitors.monitors_dictionary == {("Sw2", None): [],
+                                                ("Or1", None): []}
 
 
 def test_get_signal_names(new_monitors):
@@ -83,7 +83,7 @@ def test_get_signal_names(new_monitors):
     [D_ID] = names.lookup(["D1"])
 
     # Create a D-type device
-    devices.make_device(D_ID, devices.D_TYPE)
+    devices.make_device("D1", devices.D_TYPE)
 
     assert new_monitors.get_signal_names() == [["Sw1", "Sw2", "Or1"],
                                                ["D1.Q", "D1.QBAR"]]
@@ -165,8 +165,8 @@ def test_display_signals(capsys, new_monitors):
     HIGH = devices.HIGH
 
     # Make a clock and set a monitor on its output
-    devices.make_device(CL_ID, CLOCK_ID, 2)
-    new_monitors.make_monitor(CL_ID, None)
+    devices.make_device("Clock1", CLOCK_ID, 2)
+    new_monitors.make_monitor("Clock1", None)
 
     # Both switches are currently LOW
     for _ in range(10):
@@ -174,7 +174,7 @@ def test_display_signals(capsys, new_monitors):
         new_monitors.record_signals()
 
     # Set Sw1 to HIGH
-    devices.set_switch(SW1_ID, HIGH)
+    devices.set_switch("Sw1", HIGH)
     for _ in range(10):
         network.execute_network()
         new_monitors.record_signals()
