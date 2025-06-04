@@ -42,7 +42,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                                            operations.
     """
 
-    instances = []
+    instances = []  # Keep a record of all canvases
 
     def __init__(self, parent, monitor_name):
         """Initialise canvas properties and useful variables."""
@@ -53,30 +53,28 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GLUT.glutInit()
         self.init = False
         self.context = wxcanvas.GLContext(self)
-
         self.monitor_name = monitor_name
         self.parent = parent
+        self.monitors_dictionary = None
         MyGLCanvas.instances.append(self)  # Keep a record of all canvases
 
         # Bind events to the canvas
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_SIZE, self.on_size)
-        self.monitors_dictionary = None
 
     def init_gl(self):
         """Configure and initialise the OpenGL context."""
-        size = self.GetClientSize()
+        self.initial_size = self.GetClientSize()
         self.SetCurrent(self.context)
         GL.glDrawBuffer(GL.GL_BACK)
         GL.glClearColor(1.0, 1.0, 1.0, 0.0)
-        GL.glViewport(0, 0, size.width, size.height)
+        GL.glViewport(0, 0, self.initial_size.width, self.initial_size.height)
         GL.glMatrixMode(GL.GL_PROJECTION)
         GL.glLoadIdentity()
-        GL.glOrtho(0, size.width, 0, size.height, -1, 1)
+        GL.glOrtho(0, self.initial_size.width, 0,
+                   self.initial_size.height, -1, 1)
         GL.glMatrixMode(GL.GL_MODELVIEW)
         GL.glLoadIdentity()
-
-        self.initial_size = self.GetClientSize()
 
     def render_signal(self, monitors_dictionary, devices, cycles_completed):
         """Render the latest simulation."""
@@ -96,8 +94,9 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         # Clear everything
         GL.glClear(GL.GL_COLOR_BUFFER_BIT)
 
-        # Get values to draw
+        # Try to render signal
         try:
+            # Get values to draw
             [device_id, output_id] = \
                 self.devices.get_signal_ids(self.monitor_name)
             if "." in self.monitor_name:
@@ -107,19 +106,23 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             signal_list = self.monitors_dictionary[device_name,
                                                    output_id]
 
+            # Scaling the drawing
             i = 0
             y_HIGH = 40
             y_LOW = 20
             dx = 8
-            scalef = (self.initial_size.width-2*dx)/(self.cycles_completed*dx)
+            starting_x = dx / 2
+            scalef = (self.initial_size.width - dx) / (self.cycles_completed * dx)
             if scalef < 1:
                 GL.glScalef(scalef, 1.0, 1.0)
+                starting_x /= scalef
 
+            # Drawing
             GL.glColor3f(1.0, 0.0, 0.0)  # signal trace is red
             GL.glBegin(GL.GL_LINE_STRIP)
             for signal in signal_list:
-                x = (i * dx) + 0.5 * dx
-                x_next = (i * dx) + dx
+                x = (i * dx) + starting_x
+                x_next = (i * dx) + starting_x + dx
                 if signal == self.devices.HIGH:
                     y = y_HIGH
                     y_next = y_HIGH
@@ -140,14 +143,16 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 i += 1
             GL.glEnd()
 
+            # Reset scaling
             if scalef < 1:
                 GL.glScalef(1/scalef, 1.0, 1.0)
+
         # if the sim has not been run yet
         except AttributeError:
             pass
 
-        # We have been drawing to the back buffer, flush the graphics pipeline
-        # and swap the back buffer to the front
+        """We have been drawing to the back buffer, flush the graphics pipeline
+        and swap the back buffer to the front"""
         GL.glFlush()
         self.SwapBuffers()
 
@@ -158,7 +163,6 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             # Configure the viewport, modelview and projection matrices
             self.init_gl()
             self.init = True
-
         self.render()
 
     def on_size(self, event):
@@ -177,7 +181,7 @@ class Gui(wx.Frame):
     """
 
     def __init__(self, title):
-        """Initialise widgets and layout."""
+        """Initialise static widgets and layout."""
         super().__init__(parent=None, title=title, size=(400, 400))
         locale = wx.Locale(wx.LANGUAGE_ENGLISH)
         self.names = None
@@ -208,8 +212,7 @@ class Gui(wx.Frame):
         io_sizer.Add(self.run_cont_sizer, 0, wx.ALL | wx.CENTER, 10)
         io_sizer.Add(self.total_sizer, 0, wx.BOTTOM | wx.CENTER, 5)
 
-        # Configure the widgets
-
+        """Configure the widgets"""
         # File io widgets
         open_image = wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR)
         open_button = wx.BitmapButton(self, wx.ID_ANY, open_image)
@@ -221,7 +224,7 @@ class Gui(wx.Frame):
         # Cycles widgets
         text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
         self.cycles_sizer.Add(text, 1, wx.CENTER | wx.RIGHT, 10)
-        self.spin = wx.SpinCtrl(self, wx.ID_ANY, '20')
+        self.spin = wx.SpinCtrl(self, wx.ID_ANY, '20', min=1, max=1000)
         self.cycles_sizer.Add(self.spin, 0, wx.CENTER)
 
         # Run and continue widgets
@@ -246,14 +249,14 @@ class Gui(wx.Frame):
         # Monitor widgets
         text = wx.StaticText(self, wx.ID_ANY, "Monitors")
         lower_sizer.Add(text, 1, wx.ALL | wx.CENTER, 10)
-
+        # Allow scrolling
         self.monitor_rows_sizer = wx.BoxSizer(wx.VERTICAL)
         self.scrolled_panel = wx.ScrolledWindow(self, style=wx.VSCROLL)
         self.scrolled_panel.SetScrollRate(10, 10)
         self.scrolled_panel.SetSizer(self.monitor_rows_sizer)
         lower_sizer.Add(self.scrolled_panel, 100, wx.EXPAND)
         self.monitor_rows_sizer.Fit(self.scrolled_panel)
-
+        # Add monitor widgets
         add_sizer = wx.BoxSizer(wx.HORIZONTAL)
         lower_sizer.Add(add_sizer, 0, wx.EXPAND)
         add_image = wx.ArtProvider.GetBitmap(wx.ART_PLUS)
@@ -263,25 +266,19 @@ class Gui(wx.Frame):
         add_sizer.Add(self.choice, 0, wx.CENTER | wx.RIGHT, 15)
 
         # Bind events to widgets
-        open_button.Bind(wx.EVT_BUTTON, self.OpenFile)
-        quit_button.Bind(wx.EVT_BUTTON, self.Quit)
-        run_button.Bind(wx.EVT_BUTTON, self.Run)
-        cont_button.Bind(wx.EVT_BUTTON, self.Continue)
-        add_button.Bind(wx.EVT_BUTTON, self.CreateMonitor)
+        open_button.Bind(wx.EVT_BUTTON, self._open_file)
+        quit_button.Bind(wx.EVT_BUTTON, self._quit)
+        run_button.Bind(wx.EVT_BUTTON, self._run)
+        cont_button.Bind(wx.EVT_BUTTON, self._continue_)
+        add_button.Bind(wx.EVT_BUTTON, self._create_monitor)
 
         # Set screen size
         self.SetSizeHints(500, 500)
         self.SetSize(600, 600)
         self.SetSizer(main_sizer)
-        self.SetPosition((0, 39))
+        self.SetPosition((0, 50))
 
-    def clear_widgets(self):
-        """Clear the switches and monitors form the gui."""
-        self.switch_rows_sizer.Clear(True)
-        self.monitor_rows_sizer.Clear(True)
-        MyGLCanvas.instances = []
-
-    def AddSwitch(self, switch_id, switch_state):
+    def _add_switch(self, switch_id, switch_state):
         """Add a switch to GUI."""
         switch_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.switch_rows_sizer.Add(switch_sizer, 0, wx.CENTER | wx.ALL, 5)
@@ -291,42 +288,48 @@ class Gui(wx.Frame):
         switch_radiobox.SetSelection(switch_state)
         switch_sizer.Add(switch_radiobox, 0, wx.CENTER)
         switch_radiobox.Bind(wx.EVT_RADIOBOX, lambda evt,
-                             temp=switch_id: self.OnSwitch(evt, temp))
+                             temp=switch_id: self._on_switch(evt, temp))
         self.Layout()
 
-    def OnSwitch(self, event, switch_id):
+    def _on_switch(self, event, switch_id):
         """Handle event when a switch is toggled."""
         switch_state = event.GetSelection()
         if not self.devices.set_switch(switch_id, switch_state):
-            self.Error("Invalid switch.")
+            print("Error! Invalid switch.")
 
-    def CreateMonitor(self, event):
+    def _create_monitor(self, event):
         """Create a new monitor."""
         # Handle the case that no file has yet been opened
         if not self.monitors:
-            self.Error("Please open a file first.")
+            print("Error! Please open a file first.")
             return
 
         # Get which signal to add
         signal_int = self.choice.GetSelection()
-        signal_name = self.all_signal_list[signal_int]
+        if signal_int == -1:  # No signals left to add
+            print("Error! Could not make monitor.")
+            return
+        signal_name = self.monitors.get_signal_names()[1][signal_int]
         [device_id, output_id] = self.devices.get_signal_ids(signal_name)
         device_id = self.names.get_name_string(device_id)
 
+        # Create monitor
         monitor_error = self.monitors.make_monitor(
             device_id, output_id, self.cycles_completed)
         if monitor_error == self.monitors.NO_ERROR:
             print("Successfully made monitor.")
             # Add to gui
-            self.AddMonitor(signal_name)
+            self._add_monitor(signal_name)
         else:
             print("Error! Could not make monitor.")
 
-    def AddMonitor(self, signal_name):
+    def _add_monitor(self, signal_name):
         """Add a monitor that already exists to GUI."""
-        monitor_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        # Save location of monitor
         pos = len(self.monitor_rows_sizer.GetChildren())
 
+        # Add to GUI
+        monitor_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.monitor_rows_sizer.Add(monitor_sizer, 0, wx.EXPAND, 0)
         minus_image = wx.ArtProvider.GetBitmap(wx.ART_MINUS)
         zap_button = wx.BitmapButton(
@@ -338,14 +341,19 @@ class Gui(wx.Frame):
         self.canvas = MyGLCanvas(self.scrolled_panel, signal_name)
         monitor_sizer.Add(self.canvas, 1, wx.EXPAND | wx.CENTER | wx.ALL, 5)
 
+        # Redraw gui
         self.scrolled_panel.FitInside()
         self.Layout()
 
+        # Bind zap button
         zap_button.Bind(wx.EVT_BUTTON,
                         lambda evt, temp=pos, temp2=signal_name:
-                        self.ZapMonitor(evt, temp, temp2))
+                        self._zap_montior(evt, temp, temp2))
 
-    def ZapMonitor(self, event, pos, signal_name):
+        # Set options on choice
+        self.choice.SetItems(self.monitors.get_signal_names()[1])
+
+    def _zap_montior(self, event, pos, signal_name):
         """Remove the specified monitor."""
         # Remove from monitors
         [device, port] = self.devices.get_signal_ids(signal_name)
@@ -356,11 +364,14 @@ class Gui(wx.Frame):
             self.scrolled_panel.FitInside()
             self.Layout()
             MyGLCanvas.instances.pop(pos)
+            # Set options on choice
+            self.choice.SetItems(self.monitors.get_signal_names()[1])
         else:
-            self.Error("Could not zap monitor.")
+            print("Error! Could not zap monitor.")
 
-    def OpenFile(self, event):
+    def _open_file(self, event):
         """Open a file specified by the user."""
+        # Opens file selector
         openFileDialog = wx.FileDialog(
             self, "Open txt file", "", "",
             wildcard="TXT files (*.txt)|*.txt",
@@ -369,9 +380,11 @@ class Gui(wx.Frame):
             return
         self.path = openFileDialog.GetPath()
         print("File chosen =", self.path)
+
+        # Make sure gui is blank
         self.cycles_completed = 0
         self.total_cycles_text.SetLabel(str(self.cycles_completed))
-        self.clear_widgets()
+        self._clear_widgets()
 
         # Initialise instances of the four inner simulator classes
         self.names = Names()
@@ -379,87 +392,92 @@ class Gui(wx.Frame):
         self.network = Network(self.names, self.devices)
         self.monitors = Monitors(self.names, self.devices, self.network)
 
+        # Interpret file
         scanner = Scanner(self.path, self.names)
         parser = Parser(self.names,
                         self.devices, self.network, self.monitors, scanner)
         if not parser.parse_network():
-            self.Error("Unable to parse file.")
+            print("Error! Unable to parse file.")
             return
 
-        self.populate_widgets()
+        # Add switches and monitors to gui
+        self._populate_widgets()
 
-    def populate_widgets(self):
-
+    def _populate_widgets(self):
+        """Add required switches and monitors to the gui."""
+        # Add switches
         switch_ids = self.devices.find_devices(self.devices.SWITCH)
         for switch_id in switch_ids:
             switch = self.devices.get_device(switch_id)
             switch_state = switch.switch_state
-            self.AddSwitch(switch_id, switch_state)
+            self._add_switch(switch_id, switch_state)
 
-        [monitored_signal_list, non_monitored_signal_list] = \
-            self.monitors.get_signal_names()
-        self.all_signal_list = monitored_signal_list + \
-            non_monitored_signal_list
+        # Set options on choice to non monitored signals
+        self.choice.SetItems(self.monitors.get_signal_names()[1])
 
-        self.choice.SetItems(self.all_signal_list)
-        for monitored_signal_name in monitored_signal_list:
-            self.AddMonitor(monitored_signal_name)
-
+        # Add monitors and ensure they are cleared
+        for monitored_signal_name in self.monitors.get_signal_names()[0]:
+            self._add_monitor(monitored_signal_name)
         for signal_list in self.monitors.monitors_dictionary:
             self.monitors.monitors_dictionary[signal_list] = []
 
-    def run_network(self):
+    def _clear_widgets(self):
+        """Clear the switches and monitors from the gui."""
+        self.switch_rows_sizer.Clear(True)
+        self.monitor_rows_sizer.Clear(True)
+        MyGLCanvas.instances = []
+
+    def _run_network(self):
         """Run the network for the specified number of simulation cycles.
 
         Return True if successful.
         """
+        # Get user input
         cycles = self.spin.GetValue()
 
+        # Run
         for _ in range(cycles):
             if self.network.execute_network():
                 self.monitors.record_signals()
             else:
-                self.Error("Network oscillating.")
+                print("Error! Network oscillating.")
                 return False
 
+        # Update cycles
         self.cycles_completed += cycles
         self.total_cycles_text.SetLabel(str(self.cycles_completed))
 
+        # Update monitor displays
         for canvas in MyGLCanvas.instances:
             canvas.render_signal(self.monitors.monitors_dictionary,
                                  self.devices, self.cycles_completed)
 
         return True
 
-    def Run(self, event):
+    def _run(self, event):
         """Run the simulation from scratch."""
         # Handle the case that no file has yet been opened
         if not self.monitors:
-            self.Error("Please open a file first")
+            print("Error! Please open a file first")
             return
 
         self.cycles_completed = 0
-        self.total_cycles_text.SetLabel(str(self.cycles_completed))
-        self.clear_widgets()
-        self.populate_widgets()
-        self.run_network()
+        self._clear_widgets()
+        self._populate_widgets()
+        self._run_network()
 
-    def Continue(self, event):
+    def _continue_(self, event):
         """Continue a previously run simulation."""
         # Handle the case that no file has yet been opened
         if not self.monitors:
-            self.Error("Please open a file first")
+            print("Error! Please open a file first")
             return
 
         if self.cycles_completed == 0:
-            self.Error("Nothing to continue. Please run first.")
+            print("Error! Nothing to continue. Please run first.")
         else:
-            self.run_network()
+            self._run_network()
 
-    def Error(self, error_msg):
-        """Create error box."""
-        wx.MessageBox(error_msg, 'Error', wx.OK | wx.ICON_ERROR)
-
-    def Quit(self, event):
+    def _quit(self, event):
         """Exit the program."""
         sys.exit()

@@ -11,7 +11,6 @@ Parser - parses the definition file and builds the logic network.
 
 
 class Parser:
-
     """Parse the definition file and build the logic network.
 
     The parser deals with error handling. It analyses the syntactic and
@@ -73,7 +72,7 @@ class Parser:
                            self.UNCONNECTED_INPUT] = range(30)
 
     def _error(self, error_type, current_line, next_symbol, stopping_symbol):
-        """Generate a command line report for the first error found"""
+        """Generate a command line report for the first error found."""
         if current_line is None:
             pass
         else:
@@ -330,7 +329,7 @@ class Parser:
 
     def _seek_error(self, current_line, target):
         """Semantic errors use this function to generate an arrow
-        pointing at the part of the current line that caused the error"""
+        pointing at the part of the current line that caused the error."""
         if target == "first":
             """Find first port"""
             equals = current_line.find("=")
@@ -620,7 +619,7 @@ class Parser:
             self._error(self.UNCONNECTED_INPUT, None, None, "Stop")
             self.error_count += 1
         if self.error_count == 0:
-            print("File parsed successfully")
+            print("File parsed successfully.")
             return True
         else:
             return False

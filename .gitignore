@@ -1,2 +1,9 @@
-__pycache__/*
+__pycache__/
 .pytest_cache/
+.__pycache__/
+__pycache__/devices.cpython-313.pyc
+__pycache__/gui.cpython-313.pyc
+__pycache__/network.cpython-313.pyc
+__pycache__/scanner.cpython-313.pyc
+__pycache__/parse.cpython-313.pyc
+__pycache__/names.cpython-313.pyc
