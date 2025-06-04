@@ -17,7 +17,7 @@ def parser_factory():
         new_devices = Devices(new_names)
         new_network = Network(new_names, new_devices)
         new_monitors = Monitors(new_names, new_devices, new_network)
-        new_scanner = Scanner(filename, new_names)
+        new_scanner = Scanner("test_files/"+filename, new_names)
         return Parser(new_names, new_devices, 
                       new_network, new_monitors, new_scanner)
     return _create_parser
