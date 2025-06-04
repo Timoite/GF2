@@ -348,6 +348,6 @@ def test_oscillating_network(new_network):
     devices.make_device(SW4_ID, devices.SWITCH, 0)
     # Connect the NOR gate to itself
     network.make_connection(NOR1, None, NOR1, I1)
-    network.make_connection(SW4, None, NOR1, I2)
+    network.make_connection(SW4_ID, None, NOR1, I2)
 
     assert not network.execute_network()
