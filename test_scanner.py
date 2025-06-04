@@ -20,7 +20,7 @@ def test_get_symbol(new_scanner):
     scanner = new_scanner("all_symbols")
 
     symbol = scanner.get_symbol()
-    assert isinstance(symbol, Symbol())
+    assert isinstance(symbol, Symbol)
 
     assert symbol.type is not None
     assert symbol.id is not None
