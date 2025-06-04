@@ -11,7 +11,7 @@ def new_scanner():
     # tests/test_files directory
     def _create_scanner(file_name):
         new_names = Names()
-        return Scanner("tests/test_files/" + file_name + ".txt", new_names)
+        return Scanner(file_name + ".txt", new_names)
     return _create_scanner
 
 
