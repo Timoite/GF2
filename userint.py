@@ -222,12 +222,10 @@ class UserInterface:
 
     def monitor_command(self):
         """Set the specified monitor."""
-        monitor = self.read_signal_name()
-        print(monitor)
-        if monitor is not None:
-            [device, port] = monitor
-            print(device, port)
-            monitor_error = self.monitors.make_monitor(device, port,
+        monitor_name = self.read_string()
+        if monitor_name is not None:
+            [device, port] = self.devices.get_signal_ids(monitor_name)
+            monitor_error = self.monitors.make_monitor(monitor_name, port,
                                                        self.cycles_completed)
             if monitor_error == self.monitors.NO_ERROR:
                 print("Successfully made monitor.")
@@ -236,10 +234,10 @@ class UserInterface:
 
     def zap_command(self):
         """Remove the specified monitor."""
-        monitor = self.read_signal_name()
-        if monitor is not None:
-            [device, port] = monitor
-            if self.monitors.remove_monitor(device, port):
+        monitor_name = self.read_string()
+        if monitor_name is not None:
+            [device, port] = self.devices.get_signal_ids(monitor_name)
+            if self.monitors.remove_monitor(monitor_name, port):
                 print("Successfully zapped monitor")
             else:
                 print("Error! Could not zap monitor.")
