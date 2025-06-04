@@ -342,9 +342,12 @@ def test_oscillating_network(new_network):
 
     [NOR1, I1] = names.lookup(["Nor1", "I1"])
     # Make NOR gate
-    devices.make_device(NOR1, devices.NOR, 1)
+    devices.make_device(NOR1, devices.NOR, 2)
 
+    [SW4_ID] = names.lookup("Sw4")
+    devices_make_device(SW4_ID, devices.SWITCH, 0)
     # Connect the NOR gate to itself
     network.make_connection(NOR1, None, NOR1, I1)
+    network.make_connection(SW4, None, NOR1, I2)
 
     assert not network.execute_network()
