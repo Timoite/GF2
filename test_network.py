@@ -340,7 +340,7 @@ def test_oscillating_network(new_network):
     devices = network.devices
     names = devices.names
 
-    [NOR1, I1] = names.lookup(["Nor1", "I1"])
+    [NOR1, I1, I2] = names.lookup(["Nor1", "I1", "I2"])
     # Make NOR gate
     devices.make_device(NOR1, devices.NOR, 2)
 
