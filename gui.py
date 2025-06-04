@@ -304,7 +304,7 @@ class Gui(wx.Frame):
         """Create a new monitor."""
         # Handle the case that no file has yet been opened
         if not self.monitors:
-            self.Error("Please open file before creating monitor.")
+            self.Error("Please open a file first.")
             return
 
         # Get which signal to add
@@ -355,6 +355,7 @@ class Gui(wx.Frame):
             self.monitor_rows_sizer.GetChildren()[pos].DeleteWindows()
             self.scrolled_panel.FitInside()
             self.Layout()
+            MyGLCanvas.instances.pop(pos)
         else:
             self.Error("Could not zap monitor.")
 
@@ -371,10 +372,7 @@ class Gui(wx.Frame):
         self.cycles_completed = 0
         self.total_cycles_text.SetLabel(str(self.cycles_completed))
         self.clear_widgets()
-        self.init_sim()
 
-    def init_sim(self):
-        """Start a new simulation."""
         # Initialise instances of the four inner simulator classes
         self.names = Names()
         self.devices = Devices(self.names)
@@ -388,6 +386,10 @@ class Gui(wx.Frame):
             self.Error("Unable to parse file.")
             return
 
+        self.populate_widgets()
+
+    def populate_widgets(self):
+
         switch_ids = self.devices.find_devices(self.devices.SWITCH)
         for switch_id in switch_ids:
             switch = self.devices.get_device(switch_id)
@@ -400,20 +402,17 @@ class Gui(wx.Frame):
             non_monitored_signal_list
 
         self.choice.SetItems(self.all_signal_list)
-
         for monitored_signal_name in monitored_signal_list:
             self.AddMonitor(monitored_signal_name)
+
+        for signal_list in self.monitors.monitors_dictionary:
+            self.monitors.monitors_dictionary[signal_list] = []
 
     def run_network(self):
         """Run the network for the specified number of simulation cycles.
 
         Return True if successful.
         """
-        # Handle the case that no file has yet been opened
-        if not self.monitors:
-            self.Error("Please open a file first")
-            return
-
         cycles = self.spin.GetValue()
 
         for _ in range(cycles):
@@ -434,14 +433,24 @@ class Gui(wx.Frame):
 
     def Run(self, event):
         """Run the simulation from scratch."""
+        # Handle the case that no file has yet been opened
+        if not self.monitors:
+            self.Error("Please open a file first")
+            return
+
         self.cycles_completed = 0
         self.total_cycles_text.SetLabel(str(self.cycles_completed))
         self.clear_widgets()
-        self.init_sim()
+        self.populate_widgets()
         self.run_network()
 
     def Continue(self, event):
         """Continue a previously run simulation."""
+        # Handle the case that no file has yet been opened
+        if not self.monitors:
+            self.Error("Please open a file first")
+            return
+
         if self.cycles_completed == 0:
             self.Error("Nothing to continue. Please run first.")
         else:
