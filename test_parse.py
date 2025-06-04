@@ -6,6 +6,7 @@ It validates:
 - Every recognized error in the network description raises the expected exception.
 '''
 import pytest
+import os
 
 from names import Names
 from devices import Devices
@@ -14,6 +15,7 @@ from monitors import Monitors
 from scanner import Scanner
 from parse import Parser
 
+import os
 
 @pytest.fixture
 def parser_factory():
@@ -23,7 +25,10 @@ def parser_factory():
         devices = Devices(names)
         network = Network(names, devices)
         monitors = Monitors(names, devices, network)
-        scanner = Scanner(f'test_files/{filename}', names)
+        # Resolve path relative to THIS file, not the working directory
+        base_dir = os.path.dirname(__file__)
+        file_path = os.path.join(base_dir, "test_files", filename)
+        scanner = Scanner(file_path, names)
         return Parser(names, devices, network, monitors, scanner)
     return _create_parser
 
