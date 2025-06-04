@@ -160,7 +160,7 @@ class Monitors:
         margin = self.get_margin()
         for device_id, output_id in self.monitors_dictionary:
             monitor_name = self.devices.get_signal_name(device_id, output_id)
-            name_length = len(self.names.get_name_string(monitor_name))
+            name_length = len(monitor_name)
             signal_list = self.monitors_dictionary[(device_id, output_id)]
             print(monitor_name + (margin - name_length) * " ", end=": ")
             for signal in signal_list:
