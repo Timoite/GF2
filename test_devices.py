@@ -120,6 +120,8 @@ def test_get_signal_name(devices_with_items):
     devices = devices_with_items
     names = devices.names
     [AND1, I1] = names.lookup(["And1", "I1"])
+    AND1 = names.get_name_string(AND1)
+    I1 = names.get_name_string(I1)
 
     assert devices.get_signal_name(AND1, I1) == "And1.I1"
     assert devices.get_signal_name(AND1, None) == "And1"

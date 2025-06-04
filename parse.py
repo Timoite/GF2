@@ -619,7 +619,6 @@ class Parser:
             be able to calculate its outputs"""
             self._error(self.UNCONNECTED_INPUT, None, None, "Stop")
             self.error_count += 1
-        print(self.monitors.get_margin())
         if self.error_count == 0:
             print("File parsed successfully")
             return True
