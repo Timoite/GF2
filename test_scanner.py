@@ -74,4 +74,4 @@ def test_whitespace(new_scanner):
     """Should ignore all whitespace and new lines"""
     scanner = new_scanner("whitespace")
     symbol = scanner.get_symbol()
-    assert symbol.type == 1
+    assert symbol.type == 2
