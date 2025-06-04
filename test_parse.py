@@ -29,7 +29,7 @@ def test_parse_network_validity(parser_factory):
     assert True  # Placeholder for actual parsing logic
 
 
-def test_parse_network_with_errors(power_factory):
+def test_parse_network_with_errors(parser_factory):
     """Test if parse_network handles errors correctly."""
     # This test would require a different test file with errors
     # assert new_parser.parse_network() is True
