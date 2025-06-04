@@ -102,8 +102,8 @@ class MyGLCanvas(wxcanvas.GLCanvas):
 
             # Scaling the drawing
             i = 0
-            y_HIGH = 40
-            y_LOW = 20
+            y_HIGH = 25
+            y_LOW = 5
             dx = 8
             starting_x = dx / 2
             scalef = (self.initial_size.width - dx) \
@@ -246,7 +246,7 @@ class Gui(wx.Frame):
         lower_sizer.Add(text, 1, wx.ALL | wx.CENTER, 10)
         # Allow scrolling
         self.monitor_rows_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.scrolled_panel = wx.Panel(self)
+        self.scrolled_panel = wx.Panel(self) #wx.ScrolledWindow(self)
         # self.scrolled_panel.SetScrollRate(10, 10) remove scrolling again lol
         self.scrolled_panel.SetSizer(self.monitor_rows_sizer)
         lower_sizer.Add(self.scrolled_panel, 0, wx.EXPAND)
@@ -257,7 +257,7 @@ class Gui(wx.Frame):
         lower_sizer.Add(add_sizer, 0, wx.EXPAND)
         add_image = wx.ArtProvider.GetBitmap(wx.ART_PLUS)
         add_button = wx.BitmapButton(self, wx.ID_ANY, add_image)
-        add_sizer.Add(add_button, 0, wx.ALL, 20)
+        add_sizer.Add(add_button, 0, wx.ALL, 5)
         self.choice = wx.Choice(self, choices=[])
         add_sizer.Add(self.choice, 0, wx.CENTER | wx.RIGHT, 15)
 
@@ -287,24 +287,6 @@ class Gui(wx.Frame):
                              temp=switch_id: self._on_switch(evt, temp))
         self.Layout()
         self._janky_linux_resizing_fix()
-
-    def _janky_linux_resizing_fix(self):
-        inital_size = self.GetSize()
-        self.Fit()
-        fitted_size = self.GetSize()
-        self.SetSizeHints(fitted_size)
-        new_size = [0, 0]
-        if fitted_size[0] > inital_size[0]:
-            new_size[0] = fitted_size[0]
-        else:
-            new_size[0] = inital_size[0]
-
-        if fitted_size[1] > inital_size[1]:
-            new_size[1] = fitted_size[1]
-        else:
-            new_size[1] = inital_size[1]
-
-        self.SetSize(new_size)
 
     def _on_switch(self, event, switch_id):
         """Handle event when a switch is toggled."""
@@ -349,7 +331,7 @@ class Gui(wx.Frame):
             self.scrolled_panel, wx.ID_ANY, minus_image)
         text = wx.StaticText(self.scrolled_panel, wx.ID_ANY, signal_name)
         text.SetMinSize((100, -1))
-        monitor_sizer.Add(zap_button, 0, wx.CENTER | wx.ALL, 20)
+        monitor_sizer.Add(zap_button, 0, wx.CENTER | wx.ALL, 5)
         monitor_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 10)
         self.canvas = MyGLCanvas(self.scrolled_panel, signal_name)
         monitor_sizer.Add(self.canvas, 1, wx.EXPAND | wx.CENTER | wx.ALL, 5)
@@ -377,10 +359,11 @@ class Gui(wx.Frame):
             MyGLCanvas.instances.pop(signal_name)
             self.monitor_rows[signal_name].Clear(True)
             self.monitor_rows.pop(signal_name)
-            self.Fit()
             self.Layout()
+            self._janky_linux_resizing_fix()
             # Set options on choice
             self.choice.SetItems(self.monitors.get_signal_names()[1])
+            print("Successfully zapped monitor.")
         else:
             print("Error! Could not zap monitor.")
 
@@ -497,3 +480,22 @@ class Gui(wx.Frame):
     def _quit(self, event):
         """Exit the program."""
         sys.exit()
+
+    def _janky_linux_resizing_fix(self):
+        inital_size = self.GetSize()
+        self.SetSizeHints(0, 0)
+        self.Fit()
+        fitted_size = self.GetSize()
+        self.SetSizeHints(fitted_size)
+        new_size = [0, 0]
+        if fitted_size[0] > inital_size[0]:
+            new_size[0] = fitted_size[0]
+        else:
+            new_size[0] = inital_size[0]
+
+        if fitted_size[1] > inital_size[1]:
+            new_size[1] = fitted_size[1]
+        else:
+            new_size[1] = inital_size[1]
+
+        self.SetSize(new_size)
