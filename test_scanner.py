@@ -12,7 +12,7 @@ def new_scanner():
     return Scanner("tests/test_files/test_file.txt", Names())
 
 
-def test_get_symbol():
+def test_get_symbol(new_scanner):
     """Test if get_symbol correctly returns a symbol."""
     # It is preferable not to use scanner.py to write this part
 
