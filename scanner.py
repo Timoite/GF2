@@ -118,6 +118,8 @@ class Scanner:
         while True:
             if self.current_character == "#":
                 self._skip_comment()
+            elif self.current_character in [" ", "\n"]:
+                self._skip_whitespace()
             elif self.current_character.isalpha():
                 string += self.current_character
                 self._advance()
@@ -135,6 +137,8 @@ class Scanner:
             self._advance()
             if self.current_character == "#":
                 self._skip_comment()
+            elif self.current_character in [" ", "\n"]:
+                self._skip_whitespace()
             elif self.current_character.isdigit():
                 integer += self.current_character
             else:
