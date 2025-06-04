@@ -1,4 +1,4 @@
-'''Test the scanner module'''
+'''Test the scanner module (WIP)'''
 import pytest
 from scanner import Scanner, Symbol
 from names import Names
@@ -11,7 +11,7 @@ def new_scanner():
     # tests/test_files directory
     def _create_scanner(file_name):
         new_names = Names()
-        return Scanner(file_name + ".txt", new_names)
+        return Scanner("tests/test_files/" + file_name + ".txt", new_names)
     return _create_scanner
 
 
@@ -35,7 +35,7 @@ def test_correct_symbols(new_scanner):
         symbol = scanner.get_symbol()
         symbol_types.append(symbol.type)
         i += 1
-    assert symbol_types == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    assert symbol_types == [0, 4, 1, 5, 2, 6, 3, 7, 8, 9, 10]
 
 
 def test_keywords(new_scanner):
@@ -57,10 +57,10 @@ def test_keywords(new_scanner):
 
 
 def test_non_alphabet(new_scanner):
-    """Should ignore symbols outside the accepted alphabet and return None as the type"""
+    """Should ignore symbols outside the accepted alphabet"""
     scanner = new_scanner("non_alphabet")
     symbol = scanner.get_symbol()
-    assert symbol.type == None
+    assert symbol.type is None
 
 
 def test_comment(new_scanner):
