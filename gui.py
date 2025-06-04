@@ -112,7 +112,8 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             y_LOW = 20
             dx = 8
             starting_x = dx / 2
-            scalef = (self.initial_size.width - dx) / (self.cycles_completed * dx)
+            scalef = (self.initial_size.width - dx) \
+                / (self.cycles_completed * dx)
             if scalef < 1:
                 GL.glScalef(scalef, 1.0, 1.0)
                 starting_x /= scalef
@@ -251,10 +252,10 @@ class Gui(wx.Frame):
         lower_sizer.Add(text, 1, wx.ALL | wx.CENTER, 10)
         # Allow scrolling
         self.monitor_rows_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.scrolled_panel = wx.ScrolledWindow(self, style=wx.VSCROLL)
-        self.scrolled_panel.SetScrollRate(10, 10)
+        self.scrolled_panel = wx.Panel(self)
+        # self.scrolled_panel.SetScrollRate(10, 10) remove scrolling again lol
         self.scrolled_panel.SetSizer(self.monitor_rows_sizer)
-        lower_sizer.Add(self.scrolled_panel, 100, wx.EXPAND)
+        lower_sizer.Add(self.scrolled_panel, 0, wx.EXPAND)
         self.monitor_rows_sizer.Fit(self.scrolled_panel)
         # Add monitor widgets
         add_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -290,6 +291,8 @@ class Gui(wx.Frame):
         switch_radiobox.Bind(wx.EVT_RADIOBOX, lambda evt,
                              temp=switch_id: self._on_switch(evt, temp))
         self.Layout()
+        self.Fit()
+        self.SetSizeHints(500, self.GetSize()[1])
 
     def _on_switch(self, event, switch_id):
         """Handle event when a switch is toggled."""
@@ -352,6 +355,9 @@ class Gui(wx.Frame):
 
         # Set options on choice
         self.choice.SetItems(self.monitors.get_signal_names()[1])
+
+        self.Fit()
+        self.SetSizeHints(500, self.GetSize()[1])
 
     def _zap_montior(self, event, pos, signal_name):
         """Remove the specified monitor."""
