@@ -320,7 +320,6 @@ class Gui(wx.Frame):
             # Add to gui
             self.AddMonitor(signal_name)
         else:
-            print(self.names.get_name_string(monitor_error))
             print("Error! Could not make monitor.")
 
     def AddMonitor(self, signal_name):

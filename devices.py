@@ -130,7 +130,6 @@ class Devices:
     def get_device(self, device_id):
         """Return the Device object corresponding to device_id."""
         for device in self.devices_list:
-            print(device.device_id)
             if device.device_id == device_id:
                 return device
         return None

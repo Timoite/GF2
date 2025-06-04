@@ -34,12 +34,21 @@ def _run_and_capture(parser: Parser, capsys):
     return result, captured
 
 
+<<<<<<< HEAD
 def test_valid_file_is_accepted(parser_factory, capsys):
     """Test that a valid network description file is parsed successfully."""
     parser = parser_factory("valid.txt")
     isParsed, output = _run_and_capture(parser, capsys)
     assert isParsed is True
     assert "File parsed successfully" in output
+=======
+def test_parse_network_with_errors(parser_factory):
+    """Test if parse_network handles errors correctly."""
+    # This test would require a different test file with errors
+    # assert new_parser.parse_network() is True
+    parser = parser_factory('invalid.txt')
+    assert True  # Placeholder, should be False with errors
+>>>>>>> 0b3d73a9f775704fb1918863db9a04b927ed8ac9
 
 
 # Define the error cases with their expected messages

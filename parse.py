@@ -73,9 +73,13 @@ class Parser:
                            self.UNCONNECTED_INPUT] = range(30)
 
     def _error(self, error_type, current_line, next_symbol, stopping_symbol):
+        """Generate a command line report for the first error found"""
         if current_line is None:
             pass
         else:
+            """For syntax errors, calculates position of
+            the erroneous character and generates the full
+            line for printing later"""
             arrow_pos = len(current_line)
             arrow_str = ""
             self.error_count += 1
@@ -84,12 +88,15 @@ class Parser:
             else:
                 current_line = current_line + next_symbol
         if stopping_symbol == "standard":
+            # Skip to next line
             while not (self.symbol.type == self.scanner.COMMA
                        or self.symbol.type == self.scanner.KEYWORD
                        or self.symbol.type == self.scanner.EOF):
                 self.symbol = self.scanner.get_symbol()
                 current_line = (current_line +
                                 self.names.get_name_string(self.symbol.id))
+            """For syntax errors, print an arrow pointing at
+            the erroneous character"""
             print("Error in line:")
             print(current_line)
             i = 0
@@ -99,6 +106,8 @@ class Parser:
             arrow_str = arrow_str + "^"
             print(arrow_str)
         elif stopping_symbol == "end":
+            """Skip straight to end of file - used for fundamental
+            format errors"""
             while not (self.symbol.ID == self.scanner.END_ID or
                        self.symbol.ID == self.scanner.EOF):
                 self.symbol = self.scanner.get_symbol()
@@ -320,7 +329,10 @@ class Parser:
                   "with qualifier 0 to it.")
 
     def _seek_error(self, current_line, target):
+        """Semantic errors use this function to generate an arrow
+        pointing at the part of the current line that caused the error"""
         if target == "first":
+            """Find first port"""
             equals = current_line.find("=")
             if (current_line[equals+1:].find("-") >
                 current_line[equals+1:].find(">") and not
@@ -329,12 +341,18 @@ class Parser:
             else:
                 return current_line[equals+1:].find("-") + equals + 2
         elif target == "second":
+            """Find second port"""
             arrow = current_line.find(">")
             return current_line[arrow+1:].find("-") + arrow + 2
         else:
+            """Function call tells this function to look for a particular
+            character, as per the EBNF the source of the semantic error
+            must follow it - this returns the next position"""
             return current_line.find(target) + 1
 
     def _name(self):
+        """Generate a name - a combination of letters,
+        numbers and underscores"""
         name = ""
         while (self.symbol.type == self.scanner.STRING
                 or self.symbol.type == self.scanner.INTEGER
@@ -344,6 +362,8 @@ class Parser:
         return name
 
     def _portID(self, current_line):
+        """Generate a port ID - a string followed by an integer or
+        just a string. If the ID is None, this function is not called."""
         portID = ""
         if self.symbol.type == self.scanner.STRING:
             portID = portID + self.names.get_name_string(self.symbol.id)
@@ -367,6 +387,8 @@ class Parser:
                         self.names.get_name_string(self.symbol.id), "standard")
 
     def _signalID(self, current_line):
+        """Generate a signal - a device name optionally followed
+        by a dash and a port ID"""
         deviceID = self._name()
         current_line = current_line + deviceID
         if self.symbol.type == self.scanner.DASH:
@@ -390,6 +412,8 @@ class Parser:
                 return [deviceID, None]
 
     def _devicetype(self, current_line):
+        """Generate a device type - a string in a fixed list
+        from the scanner"""
         if self.symbol.type == self.scanner.DEVICE_TYPE:
             devicetype = self.names.get_name_string(self.symbol.id)
             self.symbol = self.scanner.get_symbol()
@@ -401,6 +425,8 @@ class Parser:
             return (self.names.get_name_string(self.symbol.id))
 
     def _device(self):
+        """Generate a device: a string followed by an equals sign,
+        a device type and optionally a qualifier"""
         deviceID = self._name()
         current_line = deviceID
         if self.symbol.type == self.scanner.EQUALS:
@@ -437,6 +463,8 @@ class Parser:
                 self._error(error_type, current_line, None, "seek")
 
     def _make_device(self, device, deviceID, qualifier):
+        """Accesses the devices module and makes a device using the input line,
+        then returns the semantic error recieved (if any)"""
         if device in ["AND", "OR", "NAND", "NOR", "XOR"]:
             if device == "AND":
                 error = self.devices.make_device(deviceID, self.devices.AND,
@@ -467,6 +495,8 @@ class Parser:
         return error
 
     def _connection(self):
+        """Generate a connection: a string followed by an equals, a signal, an
+        arrow, and another signal."""
         connectionID = self._name()
         current_line = connectionID
         if self.symbol.type == self.scanner.EQUALS:
@@ -494,6 +524,8 @@ class Parser:
         else:
             self._error(self.MISSING_EQUALS, current_line,
                         self.names.get_name_string(self.symbol.id), "standard")
+        """If there are no errors yet, accesses the network module,
+        connects the two signals, and returns the semantic error (if any)"""
         if self.error_count == 0:
             error_type = self.network.make_connection(signal1[0],
                                                       self.devices.names.query
@@ -504,6 +536,7 @@ class Parser:
                 self._error(error_type, current_line, None, "seek")
 
     def _monitor(self):
+        """Generates a monitor: a string followed by an equals and a signal"""
         monitorID = self._name()
         current_line = monitorID
         if self.symbol.type == self.scanner.EQUALS:
@@ -520,6 +553,8 @@ class Parser:
                         self.names.get_name_string(self.symbol.id),
                         "standard")
         if self.error_count == 0:
+            """If there are no errors yet, accesses the monitors module, adds a
+            monitor to the signal, and returns the semantic error (if any)"""
             error_type = self.monitors.make_monitor(port[0],
                                                     self.devices.names.query
                                                     (port[1]))
@@ -527,6 +562,9 @@ class Parser:
                 self._error(error_type, current_line, None, "seek")
 
     def _devices_list(self):
+        """Looks for the DEVICES keyword, and if found,
+        generates a comma-seperated list of devices
+        terminating in the CONNECTIONS keyword"""
         self.symbol = self.scanner.get_symbol()
         if (self.symbol.type == self.scanner.KEYWORD and
                 self.symbol.id == self.scanner.DEVICES_ID):
@@ -539,6 +577,9 @@ class Parser:
             self._error(self.MISSING_DEVICES_HEADER, None, None, "End")
 
     def _connections_list(self):
+        """Looks for the CONNECTIONS keyword, and if found,
+        generates a comma-seperated list of connections
+        terminating in the MONITORS keyword"""
         if (self.symbol.type == self.scanner.KEYWORD and
                 self.symbol.id == self.scanner.CONNECTIONS_ID):
             self.symbol = self.scanner.get_symbol()
@@ -550,6 +591,9 @@ class Parser:
             self._error(self.MISSING_CONNECTIONS_HEADER, None, None, "End")
 
     def _monitors_list(self):
+        """Looks for the MONITORS keyword, and if found,
+        generates a comma-seperated list of monitors
+        terminating in the END keyword"""
         if (self.symbol.type == self.scanner.KEYWORD and
                 self.symbol.id == self.scanner.MONITORS_ID):
             self.symbol = self.scanner.get_symbol()
@@ -570,6 +614,9 @@ class Parser:
         self._connections_list()
         self._monitors_list()
         if self.network.check_network() is False:
+            """After everything is concluded, the network must have
+            no unconnected inputs, or the network module will never
+            be able to calculate its outputs"""
             self._error(self.UNCONNECTED_INPUT, None, None, "Stop")
             self.error_count += 1
         if self.error_count == 0:
