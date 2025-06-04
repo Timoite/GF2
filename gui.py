@@ -34,15 +34,9 @@ class MyGLCanvas(wxcanvas.GLCanvas):
 
     on_paint(self, event): Handles the paint event.
 
-    on_size(self, event): Handles the canvas resize event.
-
-    on_mouse(self, event): Handles mouse events.
-
-    render_text(self, text, x_pos, y_pos): Handles text drawing
-                                           operations.
     """
 
-    instances = []  # Keep a record of all canvases
+    instances = {}  # Keep a record of all canvases
 
     def __init__(self, parent, monitor_name):
         """Initialise canvas properties and useful variables."""
@@ -56,7 +50,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         self.monitor_name = monitor_name
         self.parent = parent
         self.monitors_dictionary = None
-        MyGLCanvas.instances.append(self)  # Keep a record of all canvases
+        MyGLCanvas.instances[monitor_name] = self  # Keep a record of all canvases
 
         # Bind events to the canvas
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -257,6 +251,7 @@ class Gui(wx.Frame):
         self.scrolled_panel.SetSizer(self.monitor_rows_sizer)
         lower_sizer.Add(self.scrolled_panel, 0, wx.EXPAND)
         self.monitor_rows_sizer.Fit(self.scrolled_panel)
+        self.monitor_rows = {}
         # Add monitor widgets
         add_sizer = wx.BoxSizer(wx.HORIZONTAL)
         lower_sizer.Add(add_sizer, 0, wx.EXPAND)
@@ -291,8 +286,25 @@ class Gui(wx.Frame):
         switch_radiobox.Bind(wx.EVT_RADIOBOX, lambda evt,
                              temp=switch_id: self._on_switch(evt, temp))
         self.Layout()
+        self._janky_linux_resizing_fix()
+
+    def _janky_linux_resizing_fix(self):
+        inital_size = self.GetSize()
         self.Fit()
-        self.SetSizeHints(500, self.GetSize()[1])
+        fitted_size = self.GetSize()
+        self.SetSizeHints(fitted_size)
+        new_size = [0, 0]
+        if fitted_size[0] > inital_size[0]:
+            new_size[0] = fitted_size[0]
+        else:
+            new_size[0] = inital_size[0]
+
+        if fitted_size[1] > inital_size[1]:
+            new_size[1] = fitted_size[1]
+        else:
+            new_size[1] = inital_size[1]
+
+        self.SetSize(new_size)
 
     def _on_switch(self, event, switch_id):
         """Handle event when a switch is toggled."""
@@ -328,11 +340,9 @@ class Gui(wx.Frame):
 
     def _add_monitor(self, signal_name):
         """Add a monitor that already exists to GUI."""
-        # Save location of monitor
-        pos = len(self.monitor_rows_sizer.GetChildren())
-
         # Add to GUI
         monitor_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.monitor_rows[signal_name] = monitor_sizer
         self.monitor_rows_sizer.Add(monitor_sizer, 0, wx.EXPAND, 0)
         minus_image = wx.ArtProvider.GetBitmap(wx.ART_MINUS)
         zap_button = wx.BitmapButton(
@@ -345,31 +355,30 @@ class Gui(wx.Frame):
         monitor_sizer.Add(self.canvas, 1, wx.EXPAND | wx.CENTER | wx.ALL, 5)
 
         # Redraw gui
-        self.scrolled_panel.FitInside()
         self.Layout()
 
         # Bind zap button
         zap_button.Bind(wx.EVT_BUTTON,
-                        lambda evt, temp=pos, temp2=signal_name:
-                        self._zap_montior(evt, temp, temp2))
+                        lambda evt, temp=signal_name:
+                        self._zap_montior(evt, temp))
 
         # Set options on choice
         self.choice.SetItems(self.monitors.get_signal_names()[1])
 
-        self.Fit()
-        self.SetSizeHints(500, self.GetSize()[1])
+        self._janky_linux_resizing_fix()
 
-    def _zap_montior(self, event, pos, signal_name):
+    def _zap_montior(self, event, signal_name):
         """Remove the specified monitor."""
         # Remove from monitors
         [device, port] = self.devices.get_signal_ids(signal_name)
         device = self.names.get_name_string(device)
         if self.monitors.remove_monitor(device, port):
             # Remove from GUI
-            self.monitor_rows_sizer.GetChildren()[pos].DeleteWindows()
-            self.scrolled_panel.FitInside()
+            MyGLCanvas.instances.pop(signal_name)
+            self.monitor_rows[signal_name].Clear(True)
+            self.monitor_rows.pop(signal_name)
+            self.Fit()
             self.Layout()
-            MyGLCanvas.instances.pop(pos)
             # Set options on choice
             self.choice.SetItems(self.monitors.get_signal_names()[1])
         else:
@@ -431,7 +440,8 @@ class Gui(wx.Frame):
         """Clear the switches and monitors from the gui."""
         self.switch_rows_sizer.Clear(True)
         self.monitor_rows_sizer.Clear(True)
-        MyGLCanvas.instances = []
+        MyGLCanvas.instances = {}
+        self.monitor_rows = {}
 
     def _run_network(self):
         """Run the network for the specified number of simulation cycles.
@@ -454,7 +464,7 @@ class Gui(wx.Frame):
         self.total_cycles_text.SetLabel(str(self.cycles_completed))
 
         # Update monitor displays
-        for canvas in MyGLCanvas.instances:
+        for canvas in MyGLCanvas.instances.values():
             canvas.render_signal(self.monitors.monitors_dictionary,
                                  self.devices, self.cycles_completed)
 
