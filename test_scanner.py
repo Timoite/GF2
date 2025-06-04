@@ -5,11 +5,14 @@ from names import Names
 
 
 @pytest.fixture
-def new_scanner(file_name):
+def new_scanner():
     """Return a Scanner class instance."""
     # Assuming 'test_file.txt' is a valid test file in the
     # tests/test_files directory
-    return Scanner("tests/test_files/" + file_name + ".txt", Names())
+    def _create_scanner(file_name):
+        new_names = Names()
+        return Scanner("tests/test_files/" + file_name + ".txt", new_names)
+    return _create_scanner
 
 
 def test_get_symbol(new_scanner):
