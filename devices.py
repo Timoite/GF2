@@ -193,14 +193,11 @@ class Devices:
             elif port_id in device.outputs or port_id in device.inputs:
                 port_name = self.names.get_name_string(port_id)
                 signal_name = ".".join([device_id, port_name])
-                print(port_name)
-                print(signal_name)
-                print("?")
                 return signal_name
             else:
-                return [device_id, port_id]
+                return None
         else:
-            return [port_id, device_id]
+            return None
 
     def get_signal_ids(self, signal_name):
         """Return the device and output IDs of the specified signal."""
