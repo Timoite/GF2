@@ -202,7 +202,6 @@ class Scanner:
             self._advance()
         elif self.current_character == "":  # End of file
             symbol.type = self.EOF
-            symbol.id = self.names.lookup(self.current_character)[0]
-        else:  # Invalid characters are just skipped
+        else:  # Out-of-alphabet characters do not have a defined type
             self._advance()
         return symbol
