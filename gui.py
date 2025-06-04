@@ -111,16 +111,18 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             y_HIGH = 40
             y_LOW = 20
             dx = 8
-            scalef = (self.initial_size.width-2*dx)/(self.cycles_completed*dx)
+            starting_x = dx / 2
+            scalef = (self.initial_size.width - dx) / (self.cycles_completed * dx)
             if scalef < 1:
                 GL.glScalef(scalef, 1.0, 1.0)
+                starting_x /= scalef
 
             # Drawing
             GL.glColor3f(1.0, 0.0, 0.0)  # signal trace is red
             GL.glBegin(GL.GL_LINE_STRIP)
             for signal in signal_list:
-                x = (i * dx) + 0.5 * dx
-                x_next = (i * dx) + dx
+                x = (i * dx) + starting_x
+                x_next = (i * dx) + starting_x + dx
                 if signal == self.devices.HIGH:
                     y = y_HIGH
                     y_next = y_HIGH
@@ -222,7 +224,7 @@ class Gui(wx.Frame):
         # Cycles widgets
         text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
         self.cycles_sizer.Add(text, 1, wx.CENTER | wx.RIGHT, 10)
-        self.spin = wx.SpinCtrl(self, wx.ID_ANY, '20')
+        self.spin = wx.SpinCtrl(self, wx.ID_ANY, '20', min=1, max=1000)
         self.cycles_sizer.Add(self.spin, 0, wx.CENTER)
 
         # Run and continue widgets
