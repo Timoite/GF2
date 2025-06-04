@@ -1,4 +1,4 @@
-'''Test the scanner module (WIP)'''
+'''Test the scanner module'''
 import pytest
 from scanner import Scanner, Symbol
 from names import Names
