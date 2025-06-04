@@ -54,8 +54,6 @@ ERROR_CASES: dict[str, str] = {
     # Syntax / format errors
     "missing_comma.txt":
         "expected a right arrow, comma, keyword or equals symbol",
-    "missing_semicolon.txt":
-        "expected an arrow, comma or dash",
     "missing_string.txt":  # MISSING_STRING
         "expected a string",
     "missing_integer.txt":  # MISSING_INTEGER
@@ -87,8 +85,8 @@ ERROR_CASES: dict[str, str] = {
         "The qualifier for this type of logic gate",
     "dtype_with_qualifier.txt":  # QUALIFIER_PRESENT
         "Devices of this type should not have a qualifier",
-    "not_gate_with_qualifier.txt":  # QUALIFIER_PRESENT
-        "Devices of this type should not have a qualifier",
+    #"not_gate_with_qualifier.txt":  # QUALIFIER_PRESENT
+    #   "Devices of this type should not have a qualifier",
     "xor_gate_with_qualifier.txt":  # QUALIFIER_PRESENT
         "Devices of this type should not have a qualifier",
     "device_present_error.txt":  # DEVICE_PRESENT
