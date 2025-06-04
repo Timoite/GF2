@@ -1,6 +1,6 @@
 '''Test the scanner module (WIP)'''
 import pytest
-from scanner import Scanner
+from scanner import Scanner, Symbol
 from names import Names
 
 
@@ -16,12 +16,11 @@ def test_get_symbol():
     """Test if get_symbol correctly returns a symbol."""
     # It is preferable not to use scanner.py to write this part
 
-    # symbol = new_scanner.get_symbol()
-    # assert isinstance(symbol, Symbol)
-    assert True  # Placeholder for actual symbol retrieval logic
+    symbol = new_scanner.get_symbol()
+    assert isinstance(symbol, Symbol())
 
-    # assert symbol.type is not None
-    # assert symbol.id is not None
+    assert symbol.type is not None
+    assert symbol.id is not None
 
 
 def test_get_symbol_gives_errors():
