@@ -135,7 +135,7 @@ class UserInterface:
         if not self.character.isalpha():  # the string must start with a letter
             print("Error! Expected a name.")
             return None
-        while self.character.isalnum():
+        while self.character.isalnum() or self.character == "_":
             name_string = "".join([name_string, self.character])
             self.get_character()
         return name_string
@@ -211,11 +211,11 @@ class UserInterface:
 
     def switch_command(self):
         """Set the specified switch to the specified signal level."""
-        switch_id = self.read_name()
-        if switch_id is not None:
+        switch_name = self.read_string()
+        if switch_name is not None:
             switch_state = self.read_number(0, 1)
             if switch_state is not None:
-                if self.devices.set_switch(switch_id, switch_state):
+                if self.devices.set_switch(switch_name, switch_state):
                     print("Successfully set switch.")
                 else:
                     print("Error! Invalid switch.")
@@ -223,8 +223,10 @@ class UserInterface:
     def monitor_command(self):
         """Set the specified monitor."""
         monitor = self.read_signal_name()
+        print(monitor)
         if monitor is not None:
             [device, port] = monitor
+            print(device, port)
             monitor_error = self.monitors.make_monitor(device, port,
                                                        self.cycles_completed)
             if monitor_error == self.monitors.NO_ERROR:

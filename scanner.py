@@ -118,7 +118,7 @@ class Scanner:
         while True:
             if self.current_character == "#":
                 self._skip_comment()
-            elif self.current_character.isalpha():
+            elif self.current_character.isalnum() or self.current_character == "_":
                 string += self.current_character
                 self._advance()
             else:  # Stop at the first non-letter character
