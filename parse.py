@@ -73,29 +73,34 @@ class Parser:
 
     def _error(self, error_type, current_line, next_symbol, stopping_symbol):
         """Generate a command line report for the first error found."""
-        if current_line is None:
-            pass
-        else:
-            """For syntax errors, calculates position of
-            the erroneous character and generates the full
-            line for printing later"""
+        # Now always increment the error count
+        self.error_count += 1
+        # Handle the case where current_line is None
+        arrow_pos = 0
+        arrow_str = ""
+        if current_line is not None:
+            if next_symbol is not None:
+                current_line += next_symbol
             arrow_pos = len(current_line)
-            arrow_str = ""
-            self.error_count += 1
-            if next_symbol is None:
-                pass
-            else:
-                current_line = current_line + next_symbol
+
         if stopping_symbol == "standard":
             # Skip to next line
             while not (self.symbol.type == self.scanner.COMMA
                        or self.symbol.type == self.scanner.KEYWORD
                        or self.symbol.type == self.scanner.EOF):
                 self.symbol = self.scanner.get_symbol()
-                current_line = (current_line +
-                                self.names.get_name_string(self.symbol.id))
+                if current_line is not None:
+                    current_line = (current_line +
+                                    self.names.get_name_string(self.symbol.id))
+        elif stopping_symbol == "end":
+            """Skip straight to end of file - used for fundamental
+            format errors"""
+            while not (self.symbol.ID == self.scanner.END_ID or
+                       self.symbol.ID == self.scanner.EOF):
+                self.symbol = self.scanner.get_symbol()
+        if current_line is None:
             """For syntax errors, print an arrow pointing at
-            the erroneous character"""
+            the erroneous character, if it exists."""
             print("Error in line:")
             print(current_line)
             i = 0
@@ -104,12 +109,6 @@ class Parser:
                 i += 1
             arrow_str = arrow_str + "^"
             print(arrow_str)
-        elif stopping_symbol == "end":
-            """Skip straight to end of file - used for fundamental
-            format errors"""
-            while not (self.symbol.ID == self.scanner.END_ID or
-                       self.symbol.ID == self.scanner.EOF):
-                self.symbol = self.scanner.get_symbol()
         if error_type == self.MISSING_ARROW_COMMA_OR_EQUALS:
             print("Error: expected a right arrow, comma, keyword"
                   " or equals symbol.")
@@ -390,6 +389,7 @@ class Parser:
         by a dash and a port ID"""
         deviceID = self._name()
         current_line = current_line + deviceID
+        
         if self.symbol.type == self.scanner.DASH:
             current_line = current_line + "-"
             self.symbol = self.scanner.get_symbol()

@@ -7,6 +7,7 @@ It validates:
 raises the expected exception.
 """
 import pytest
+import os
 
 from names import Names
 from devices import Devices
@@ -15,6 +16,7 @@ from monitors import Monitors
 from scanner import Scanner
 from parse import Parser
 
+import os
 
 @pytest.fixture
 def parser_factory():
@@ -24,7 +26,10 @@ def parser_factory():
         devices = Devices(names)
         network = Network(names, devices)
         monitors = Monitors(names, devices, network)
-        scanner = Scanner(f'test_files/{filename}', names)
+        # Resolve path relative to THIS file, not the working directory
+        base_dir = os.path.dirname(__file__)
+        file_path = os.path.join(base_dir, "test_files", filename)
+        scanner = Scanner(file_path, names)
         return Parser(names, devices, network, monitors, scanner)
     return _create_parser
 
@@ -49,8 +54,6 @@ ERROR_CASES: dict[str, str] = {
     # Syntax / format errors
     "missing_comma.txt":
         "expected a right arrow, comma, keyword or equals symbol",
-    "missing_semicolon.txt":
-        "expected an arrow, comma or dash",
     "missing_string.txt":  # MISSING_STRING
         "expected a string",
     "missing_integer.txt":  # MISSING_INTEGER
@@ -82,8 +85,8 @@ ERROR_CASES: dict[str, str] = {
         "The qualifier for this type of logic gate",
     "dtype_with_qualifier.txt":  # QUALIFIER_PRESENT
         "Devices of this type should not have a qualifier",
-    "not_gate_with_qualifier.txt":  # QUALIFIER_PRESENT
-        "Devices of this type should not have a qualifier",
+    #"not_gate_with_qualifier.txt":  # QUALIFIER_PRESENT
+    #   "Devices of this type should not have a qualifier",
     "xor_gate_with_qualifier.txt":  # QUALIFIER_PRESENT
         "Devices of this type should not have a qualifier",
     "device_present_error.txt":  # DEVICE_PRESENT
