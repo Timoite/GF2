@@ -70,6 +70,8 @@ class Names:
 
         Return None if the name string is not present in the names list
         """
+        if type(name_string) != str:
+            raise TypeError("name_string must be a string")
         if name_string in self.names_dict:
             return self.names_dict[name_string]
         else:
@@ -80,8 +82,12 @@ class Names:
 
         If the name string is not present in the names list, add it.
         """
+        if type(name_string_list) != list:
+            raise TypeError("name_string_list must be a list")
         ids = []
         for name_string in name_string_list:
+            if type(name_string) != str:
+                raise TypeError("each item in name_string_list must be a string")
             if name_string in self.names_dict:
                 pass
             else:
