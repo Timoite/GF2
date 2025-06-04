@@ -125,8 +125,8 @@ def test_get_signal_name(devices_with_items):
 
     assert AND1 == "And1"
     assert I1 == "I1"
-    assert devices.get_signal_name(AND1, I1) == "And1.I1"
     assert devices.get_signal_name(AND1, None) == "And1"
+    assert devices.get_signal_name(AND1, I1) == "And1.I1"
 
 
 def test_get_signal_ids(devices_with_items):
