@@ -1,4 +1,4 @@
-'''Test the parse module (WIP)'''
+'''Test the parse module'''
 import pytest
 
 from names import Names
