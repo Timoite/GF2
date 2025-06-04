@@ -11,7 +11,6 @@ Parser - parses the definition file and builds the logic network.
 
 
 class Parser:
-
     """Parse the definition file and build the logic network.
 
     The parser deals with error handling. It analyses the syntactic and
@@ -73,30 +72,35 @@ class Parser:
                            self.UNCONNECTED_INPUT] = range(30)
 
     def _error(self, error_type, current_line, next_symbol, stopping_symbol):
-        """Generate a command line report for the first error found"""
-        if current_line is None:
-            pass
-        else:
-            """For syntax errors, calculates position of
-            the erroneous character and generates the full
-            line for printing later"""
+        """Generate a command line report for the first error found."""
+        # Now always increment the error count
+        self.error_count += 1
+        # Handle the case where current_line is None
+        arrow_pos = 0
+        arrow_str = ""
+        if current_line is not None:
+            if next_symbol is not None:
+                current_line += next_symbol
             arrow_pos = len(current_line)
-            arrow_str = ""
-            self.error_count += 1
-            if next_symbol is None:
-                pass
-            else:
-                current_line = current_line + next_symbol
+
         if stopping_symbol == "standard":
             # Skip to next line
             while not (self.symbol.type == self.scanner.COMMA
                        or self.symbol.type == self.scanner.KEYWORD
                        or self.symbol.type == self.scanner.EOF):
                 self.symbol = self.scanner.get_symbol()
-                current_line = (current_line +
-                                self.names.get_name_string(self.symbol.id))
+                if current_line is not None:
+                    current_line = (current_line +
+                                    self.names.get_name_string(self.symbol.id))
+        elif stopping_symbol == "end":
+            """Skip straight to end of file - used for fundamental
+            format errors"""
+            while not (self.symbol.ID == self.scanner.END_ID or
+                       self.symbol.ID == self.scanner.EOF):
+                self.symbol = self.scanner.get_symbol()
+        if current_line is None:
             """For syntax errors, print an arrow pointing at
-            the erroneous character"""
+            the erroneous character, if it exists."""
             print("Error in line:")
             print(current_line)
             i = 0
@@ -105,12 +109,6 @@ class Parser:
                 i += 1
             arrow_str = arrow_str + "^"
             print(arrow_str)
-        elif stopping_symbol == "end":
-            """Skip straight to end of file - used for fundamental
-            format errors"""
-            while not (self.symbol.ID == self.scanner.END_ID or
-                       self.symbol.ID == self.scanner.EOF):
-                self.symbol = self.scanner.get_symbol()
         if error_type == self.MISSING_ARROW_COMMA_OR_EQUALS:
             print("Error: expected a right arrow, comma, keyword"
                   " or equals symbol.")
@@ -330,7 +328,7 @@ class Parser:
 
     def _seek_error(self, current_line, target):
         """Semantic errors use this function to generate an arrow
-        pointing at the part of the current line that caused the error"""
+        pointing at the part of the current line that caused the error."""
         if target == "first":
             """Find first port"""
             equals = current_line.find("=")
@@ -620,7 +618,7 @@ class Parser:
             self._error(self.UNCONNECTED_INPUT, None, None, "Stop")
             self.error_count += 1
         if self.error_count == 0:
-            print("File parsed successfully")
+            print("File parsed successfully.")
             return True
         else:
             return False

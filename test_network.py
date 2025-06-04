@@ -231,9 +231,6 @@ def test_execute_non_xor_gates(new_network, gate_id, switch_outputs,
      I3] = names.lookup(["And1", "Or1", "Nand1", "Nor1", "Sw1", "Sw2", "Sw3",
                          "I1", "I2", "I3"])
 
-    LOW = devices.LOW
-    HIGH = devices.HIGH
-
     # Make devices
     gate_id = eval(gate_id)
     gate_kind = eval(gate_kind)
@@ -340,11 +337,14 @@ def test_oscillating_network(new_network):
     devices = network.devices
     names = devices.names
 
-    [NOR1, I1] = names.lookup(["Nor1", "I1"])
+    [NOR1, I1, I2] = names.lookup(["Nor1", "I1", "I2"])
     # Make NOR gate
-    devices.make_device(NOR1, devices.NOR, 1)
+    devices.make_device(NOR1, devices.NOR, 2)
 
+    [SW4_ID] = names.lookup(["Sw4"])
+    devices.make_device(SW4_ID, devices.SWITCH, 0)
     # Connect the NOR gate to itself
     network.make_connection(NOR1, None, NOR1, I1)
+    network.make_connection(SW4_ID, None, NOR1, I2)
 
     assert not network.execute_network()
