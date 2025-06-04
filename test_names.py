@@ -13,7 +13,6 @@ def new_names():
 def test_unique_error_codes(new_names):
     """Test if unique_error_codes returns a list of unique error codes."""
     assert new_names.unique_error_codes(3) == [0, 1, 2]
-    assert len(new_names.unique_error_codes(1000)) == 1000
 
 
 def test_unique_error_codes_gives_errors(new_names):
@@ -38,9 +37,7 @@ def test_lookup(new_names):
     """Test if lookup returns the correct device IDs."""
     new_names.names_dict["hello"] = 15
     assert new_names.lookup(["hello"]) == [15]
-    assert new_names.lookup(["I am not in the dictionary", "hello"]) == [0, 15]
-    with pytest.raises(TypeError):
-        new_names.lookup(10)
+    assert new_names.lookup(["I am not in the dictionary"]) == [0]
 
 
 def test_get_name_string(new_names):

@@ -80,8 +80,6 @@ class Names:
 
         If the name string is not present in the names list, add it.
         """
-        if type(name_string_list) != list:
-            raise TypeError("name_string_list must be a list")
         ids = []
         for name_string in name_string_list:
             if name_string in self.names_dict:

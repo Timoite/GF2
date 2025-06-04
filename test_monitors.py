@@ -105,19 +105,19 @@ def test_record_signals(new_monitors):
     new_monitors.record_signals()
 
     # Set Sw1 to HIGH
-    devices.set_switch(SW1_ID, HIGH)
+    devices.set_switch("Sw1", HIGH)
     network.execute_network()
     new_monitors.record_signals()
 
     # Set Sw2 to HIGH
-    devices.set_switch(SW2_ID, HIGH)
+    devices.set_switch("Sw2", HIGH)
     network.execute_network()
     new_monitors.record_signals()
 
     assert new_monitors.monitors_dictionary == {
-        (SW1_ID, None): [LOW, HIGH, HIGH],
-        (SW2_ID, None): [LOW, LOW, HIGH],
-        (OR1_ID, None): [LOW, HIGH, HIGH]}
+        ("Sw1", None): [LOW, HIGH, HIGH],
+        ("Sw2", None): [LOW, LOW, HIGH],
+        ("Or1", None): [LOW, HIGH, HIGH]}
 
 
 def test_get_margin(new_monitors):
@@ -128,9 +128,9 @@ def test_get_margin(new_monitors):
                                                     "QBAR", "Q"])
 
     # Create a D-type device and set monitors on its outputs
-    devices.make_device(D_ID, DTYPE_ID)
-    new_monitors.make_monitor(D_ID, QBAR_ID)
-    new_monitors.make_monitor(D_ID, Q_ID)
+    devices.make_device("Dtype1", DTYPE_ID)
+    new_monitors.make_monitor("Dtype1", QBAR_ID)
+    new_monitors.make_monitor("Dtype1", Q_ID)
 
     # Longest name should be Dtype1.QBAR
     assert new_monitors.get_margin() == 11
@@ -145,13 +145,13 @@ def test_reset_monitors(new_monitors):
     LOW = devices.LOW
     new_monitors.record_signals()
     new_monitors.record_signals()
-    assert new_monitors.monitors_dictionary == {(SW1_ID, None): [LOW, LOW],
-                                                (SW2_ID, None): [LOW, LOW],
-                                                (OR1_ID, None): [LOW, LOW]}
+    assert new_monitors.monitors_dictionary == {("Sw1", None): [LOW, LOW],
+                                                ("Sw2", None): [LOW, LOW],
+                                                ("Or1", None): [LOW, LOW]}
     new_monitors.reset_monitors()
-    assert new_monitors.monitors_dictionary == {(SW1_ID, None): [],
-                                                (SW2_ID, None): [],
-                                                (OR1_ID, None): []}
+    assert new_monitors.monitors_dictionary == {("Sw1", None): [],
+                                                ("Sw2", None): [],
+                                                ("Or1", None): []}
 
 
 def test_display_signals(capsys, new_monitors):
