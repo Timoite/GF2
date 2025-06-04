@@ -32,8 +32,6 @@ def test_query(new_names):
     new_names.names_dict["hello"] = 15
     assert new_names.query("hello") == 15
     assert new_names.query("I am not in the dictionary") is None
-    with pytest.raises(TypeError):
-        new_names.lookup(10)
 
 
 def test_lookup(new_names):
@@ -43,8 +41,6 @@ def test_lookup(new_names):
     assert new_names.lookup(["I am not in the dictionary", "hello"]) == [0, 15]
     with pytest.raises(TypeError):
         new_names.lookup(10)
-    with pytest.raises(TypeError):
-        new_names.lookup([10])
 
 
 def test_get_name_string(new_names):

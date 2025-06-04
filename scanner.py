@@ -174,27 +174,27 @@ class Scanner:
             symbol.type = self.INTEGER
         elif self.current_character == "=":  # Singular punctuation
             symbol.type = self.EQUALS
-            symbol.id = self.names.lookup(self.current_character)[0]
+            symbol.id = self.names.lookup([self.current_character])[0]
             self._advance()
         elif self.current_character == "-":  # And so forth
             symbol.type = self.DASH
-            symbol.id = self.names.lookup(self.current_character)[0]
+            symbol.id = self.names.lookup([self.current_character])[0]
             self._advance()
         elif self.current_character == "/":
             symbol.type = self.SLASH
-            symbol.id = self.names.lookup(self.current_character)[0]
+            symbol.id = self.names.lookup([self.current_character])[0]
             self._advance()
         elif self.current_character == ",":
             symbol.type = self.COMMA
-            symbol.id = self.names.lookup(self.current_character)[0]
+            symbol.id = self.names.lookup([self.current_character])[0]
             self._advance()
         elif self.current_character == ">":
             symbol.type = self.ARROW
-            symbol.id = self.names.lookup(self.current_character)[0]
+            symbol.id = self.names.lookup([self.current_character])[0]
             self._advance()
         elif self.current_character == "_":
             symbol.type = self.UNDERSCORE
-            symbol.id = self.names.lookup(self.current_character)[0]
+            symbol.id = self.names.lookup([self.current_character])[0]
             self._advance()
         elif self.current_character == "":  # End of file
             symbol.type = self.EOF
