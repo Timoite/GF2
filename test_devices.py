@@ -123,6 +123,7 @@ def test_get_signal_name(devices_with_items):
     AND1 = names.get_name_string(AND1)
     I1 = names.get_name_string(I1)
 
+    assert AND1 == "And1"
     assert devices.get_signal_name(AND1, I1) == "And1.I1"
     assert devices.get_signal_name(AND1, None) == "And1"
 
