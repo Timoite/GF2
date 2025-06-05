@@ -389,7 +389,6 @@ class Parser:
         by a dash and a port ID"""
         deviceID = self._name()
         current_line = current_line + deviceID
-        
         if self.symbol.type == self.scanner.DASH:
             current_line = current_line + "-"
             self.symbol = self.scanner.get_symbol()

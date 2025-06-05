@@ -16,7 +16,6 @@ from monitors import Monitors
 from scanner import Scanner
 from parse import Parser
 
-import os
 
 @pytest.fixture
 def parser_factory():
@@ -85,7 +84,7 @@ ERROR_CASES: dict[str, str] = {
         "The qualifier for this type of logic gate",
     "dtype_with_qualifier.txt":  # QUALIFIER_PRESENT
         "Devices of this type should not have a qualifier",
-    #"not_gate_with_qualifier.txt":  # QUALIFIER_PRESENT
+    # "not_gate_with_qualifier.txt":  # QUALIFIER_PRESENT
     #   "Devices of this type should not have a qualifier",
     "xor_gate_with_qualifier.txt":  # QUALIFIER_PRESENT
         "Devices of this type should not have a qualifier",

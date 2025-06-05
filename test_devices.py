@@ -20,9 +20,9 @@ def devices_with_items():
 
     [AND1_ID, NOR1_ID, SW1_ID] = new_names.lookup(["And1", "Nor1", "Sw1"])
 
-    new_devices.make_device(AND1_ID, new_devices.AND, 2)
-    new_devices.make_device(NOR1_ID, new_devices.NOR, 16)
-    new_devices.make_device(SW1_ID, new_devices.SWITCH, 0)
+    new_devices.make_device("And1", new_devices.AND, 2)
+    new_devices.make_device("Nor1", new_devices.NOR, 16)
+    new_devices.make_device("Sw1", new_devices.SWITCH, 0)
 
     return new_devices
 
@@ -35,20 +35,21 @@ def test_get_device(devices_with_items):
 
         # get_device should return None for non-device IDs
         [X_ID] = names.lookup(["Random_non_device"])
-        assert devices_with_items.get_device(X_ID) is None
+        assert devices_with_items.get_device("X") is None
 
 
 def test_find_devices(devices_with_items):
     """Test if find_devices returns the correct devices of the given kind."""
     devices = devices_with_items
-    names = devices.names
-    device_names = [AND1_ID, NOR1_ID, SW1_ID] = names.lookup(["And1", "Nor1",
-                                                              "Sw1"])
+    # Variables below unused after changes
+    """names = devices.names"""
+    """ device_names = [AND1_ID, NOR1_ID, SW1_ID]
+    = names.lookup(["And1", "Nor1", "Sw1"])"""
 
-    assert devices.find_devices() == device_names
-    assert devices.find_devices(devices.AND) == [AND1_ID]
-    assert devices.find_devices(devices.NOR) == [NOR1_ID]
-    assert devices.find_devices(devices.SWITCH) == [SW1_ID]
+    assert devices.find_devices() == ["And1", "Nor1", "Sw1"]
+    assert devices.find_devices(devices.AND) == ["And1"]
+    assert devices.find_devices(devices.NOR) == ["Nor1"]
+    assert devices.find_devices(devices.SWITCH) == ["Sw1"]
     assert devices.find_devices(devices.XOR) == []
 
 
@@ -58,14 +59,14 @@ def test_make_device(new_devices):
 
     [NAND1_ID, CLOCK1_ID, D1_ID, I1_ID,
      I2_ID] = names.lookup(["Nand1", "Clock1", "D1", "I1", "I2"])
-    new_devices.make_device(NAND1_ID, new_devices.NAND, 2)  # 2-input NAND
+    new_devices.make_device("Nand1", new_devices.NAND, 2)  # 2-input NAND
     # Clock half period is 5
-    new_devices.make_device(CLOCK1_ID, new_devices.CLOCK, 5)
-    new_devices.make_device(D1_ID, new_devices.D_TYPE)
+    new_devices.make_device("Clock1", new_devices.CLOCK, 5)
+    new_devices.make_device("D1", new_devices.D_TYPE)
 
-    nand_device = new_devices.get_device(NAND1_ID)
-    clock_device = new_devices.get_device(CLOCK1_ID)
-    dtype_device = new_devices.get_device(D1_ID)
+    nand_device = new_devices.get_device("Nand1")
+    clock_device = new_devices.get_device("Clock1")
+    dtype_device = new_devices.get_device("D1")
 
     assert nand_device.inputs == {I1_ID: None, I2_ID: None}
     assert clock_device.inputs == {}
@@ -121,8 +122,8 @@ def test_get_signal_name(devices_with_items):
     names = devices.names
     [AND1, I1] = names.lookup(["And1", "I1"])
 
-    assert devices.get_signal_name(AND1, I1) == "And1.I1"
-    assert devices.get_signal_name(AND1, None) == "And1"
+    assert devices.get_signal_name("And1", I1) == "And1.I1"
+    assert devices.get_signal_name("And1", None) == "And1"
 
 
 def test_get_signal_ids(devices_with_items):

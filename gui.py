@@ -1,7 +1,6 @@
 """Implement the graphical user interface for the Logic Simulator."""
 
 import wx
-from wx import ArtProvider
 import wx.glcanvas as wxcanvas
 from OpenGL import GL, GLUT
 
@@ -50,7 +49,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         self.monitor_name = monitor_name
         self.parent = parent
         self.monitors_dictionary = None
-        MyGLCanvas.instances[monitor_name] = self  # Keep a record of all canvases
+        MyGLCanvas.instances[monitor_name] = self  # Keep a record of canvases
 
         # Bind events to the canvas
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -178,7 +177,6 @@ class Gui(wx.Frame):
     def __init__(self, title):
         """Initialise static widgets and layout."""
         super().__init__(parent=None, title=title, size=(400, 400))
-        locale = wx.Locale(wx.LANGUAGE_ENGLISH)
         self.names = None
         self.devices = None
         self.network = None
@@ -246,7 +244,7 @@ class Gui(wx.Frame):
         lower_sizer.Add(text, 1, wx.ALL | wx.CENTER, 10)
         # Allow scrolling
         self.monitor_rows_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.scrolled_panel = wx.Panel(self) #wx.ScrolledWindow(self)
+        self.scrolled_panel = wx.Panel(self)  # wx.ScrolledWindow(self)
         # self.scrolled_panel.SetScrollRate(10, 10) remove scrolling again lol
         self.scrolled_panel.SetSizer(self.monitor_rows_sizer)
         lower_sizer.Add(self.scrolled_panel, 0, wx.EXPAND)
