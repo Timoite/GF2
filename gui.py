@@ -217,26 +217,14 @@ class Gui(wx.Frame):
         upper_sizer.Add(io_sizer, 2, wx.EXPAND | wx.RIGHT, 10)
         upper_sizer.Add(switches_sizer, 1, wx.EXPAND, 0)
 
-        # self.fileio_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.run_cont_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.cycles_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.total_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        # io_sizer.Add(self.fileio_sizer, 0, wx.ALL | wx.CENTER, 5)
         io_sizer.Add(self.cycles_sizer, 0, wx.TOP | wx.CENTER, 15)
         io_sizer.Add(self.run_cont_sizer, 0, wx.ALL | wx.CENTER, 10)
         io_sizer.Add(self.total_sizer, 0, wx.BOTTOM | wx.CENTER, 5)
 
         """Configure the widgets"""
-        # File io widgets
-        # open_image = wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR)
-        # open_button = wx.Button(self, wx.ID_ANY, "Open File")
-        # open_button.SetBitmap(open_image, wx.TOP)
-        # self.fileio_sizer.Add(open_button, 1, wx.RIGHT, 5)
-        # quit_image = wx.ArtProvider.GetBitmap(wx.ART_QUIT, wx.ART_TOOLBAR)
-        # quit_button = wx.Button(self, wx.ID_ANY, "Quit")
-        # quit_button.SetBitmap(quit_image, wx.TOP)
-        # self.fileio_sizer.Add(quit_button, 1, wx.LEFT, 5)
-
         # Cycles widgets
         text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
         self.cycles_sizer.Add(text, 1, wx.CENTER | wx.RIGHT, 10)
@@ -265,31 +253,31 @@ class Gui(wx.Frame):
         # Monitor widgets
         text = wx.StaticText(self, wx.ID_ANY, "Monitors")
         lower_sizer.Add(text, 1, wx.ALL | wx.CENTER, 10)
-        # Allow scrolling
         self.monitor_rows_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.scrolled_panel = wx.Panel(self)  # wx.ScrolledWindow(self)
-        # self.scrolled_panel.SetScrollRate(10, 10) remove scrolling again lol
-        self.scrolled_panel.SetSizer(self.monitor_rows_sizer)
-        lower_sizer.Add(self.scrolled_panel, 0, wx.EXPAND)
-        self.monitor_rows_sizer.Fit(self.scrolled_panel)
+        lower_sizer.Add(self.monitor_rows_sizer, 0, wx.EXPAND)
         self.monitor_rows = {}
+        # Widgets to add and remove monitors
         add_zap_sizer = wx.BoxSizer(wx.HORIZONTAL)
         lower_sizer.Add(add_zap_sizer, 0, wx.EXPAND)
-        # Widgets to add monitor
-        add_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, self)
-        add_zap_sizer.Add(add_sizer, 1, wx.EXPAND | wx.RIGHT, 5)
+        add_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        add_zap_sizer.Add(add_sizer, 1, wx.EXPAND)
+        zap_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        add_zap_sizer.Add(zap_sizer, 0, wx.EXPAND)
         text = wx.StaticText(self, wx.ID_ANY, "Add monitor:")
-        add_sizer.Add(text, 0, wx.ALL | wx.CENTER, 10)
+        add_sizer.Add(text, 0, wx.CENTER | wx.ALL, 10)
         self.add_choice = wx.Choice(self, choices=[])
-        add_sizer.Add(self.add_choice, 0, wx.CENTER | wx.RIGHT, 15)
+        add_sizer.Add(self.add_choice, 0, wx.CENTER)
+        text = wx.StaticText(self, wx.ID_ANY, "Zap monitor:")
+        zap_sizer.Add(text, 0, wx.CENTER | wx.ALL, 10)
+        self.zap_choice = wx.Choice(self, choices=[])
+        zap_sizer.Add(self.zap_choice, 0, wx.CENTER | wx.RIGHT, 5)
 
         # Bind events to widgets
         self.Bind(wx.EVT_MENU, self._on_menu)
-        # open_button.Bind(wx.EVT_BUTTON, self._open_file)
-        # quit_button.Bind(wx.EVT_BUTTON, self._quit)
         run_button.Bind(wx.EVT_BUTTON, self._run)
         cont_button.Bind(wx.EVT_BUTTON, self._continue_)
-        self.add_choice.Bind(wx.EVT_CHOICE, self._on_choice)
+        self.add_choice.Bind(wx.EVT_CHOICE, self._on_add_choice)
+        self.zap_choice.Bind(wx.EVT_CHOICE, self._on_zap_choice)
 
         # Set screen size
         self.SetSizeHints(500, 500)
@@ -319,11 +307,6 @@ class Gui(wx.Frame):
 
     def _create_monitor(self, signal_name):
         """Create a new monitor."""
-        # Handle the case that no file has yet been opened
-        if not self.monitors:
-            print("Error! Please open a file first.")
-            return
-
         # Get which signal to add
         [device_id, output_id] = self.devices.get_signal_ids(signal_name)
         device_id = self.names.get_name_string(device_id)
@@ -332,9 +315,8 @@ class Gui(wx.Frame):
         monitor_error = self.monitors.make_monitor(
             device_id, output_id, self.cycles_completed)
         if monitor_error == self.monitors.NO_ERROR:
-            print("Successfully made monitor.")
-            # Add to gui
             self._add_monitor(signal_name)
+            print("Successfully made monitor.")
         else:
             print("Error! Could not make monitor.")
 
@@ -344,10 +326,10 @@ class Gui(wx.Frame):
         monitor_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.monitor_rows[signal_name] = monitor_sizer
         self.monitor_rows_sizer.Add(monitor_sizer, 0, wx.EXPAND, 0)
-        text = wx.StaticText(self.scrolled_panel, wx.ID_ANY, signal_name)
+        text = wx.StaticText(self, wx.ID_ANY, signal_name)
         text.SetMinSize((120, -1))
         monitor_sizer.Add(text, 0, wx.CENTER | wx.ALL, 13)
-        self.canvas = MyGLCanvas(self.scrolled_panel, signal_name)
+        self.canvas = MyGLCanvas(self, signal_name)
         monitor_sizer.Add(self.canvas, 1, wx.EXPAND | wx.CENTER | wx.ALL, 5)
 
         # Redraw gui
@@ -357,12 +339,13 @@ class Gui(wx.Frame):
 
         self._janky_linux_resizing_fix()
 
-    def _zap_montior(self, event, signal_name):
+    def _zap_montior(self, signal_name):
         """Remove the specified monitor."""
-        # Remove from monitors
-        [device, port] = self.devices.get_signal_ids(signal_name)
-        device = self.names.get_name_string(device)
-        if self.monitors.remove_monitor(device, port):
+        # Get which signal to zap
+        [device_id, output_id] = self.devices.get_signal_ids(signal_name)
+        device_id = self.names.get_name_string(device_id)
+
+        if self.monitors.remove_monitor(device_id, output_id):
             # Remove from GUI
             MyGLCanvas.instances.pop(signal_name)
             self.monitor_rows[signal_name].Clear(True)
@@ -375,21 +358,28 @@ class Gui(wx.Frame):
             print("Error! Could not zap monitor.")
 
     def _set_choice_options(self):
-        # Set options on choice
         default = "- Select -"
-        # choices = [default]
-        choices = self.monitors.get_signal_names()[1]
-        choices.insert(0, default)
-        print(choices)
-        self.add_choice.SetItems(choices)
+        [monitored, unmonitored] = self.monitors.get_signal_names()
+        monitored.insert(0, default)
+        unmonitored.insert(0, default)
+        self.add_choice.SetItems(unmonitored)
         self.add_choice.SetSelection(0)
+        self.zap_choice.SetItems(monitored)
+        self.zap_choice.SetSelection(0)
 
-    def _on_choice(self, event):
+    def _on_add_choice(self, event):
         signal_int = self.add_choice.GetSelection()
-        if signal_int == 0:  # No signals left to add
+        if signal_int == 0:  # No signals to add
             return
         signal_name = self.monitors.get_signal_names()[1][signal_int - 1]
         self._create_monitor(signal_name)
+
+    def _on_zap_choice(self, event):
+        signal_int = self.zap_choice.GetSelection()
+        if signal_int == 0:  # No signals to zap
+            return
+        signal_name = self.monitors.get_signal_names()[0][signal_int - 1]
+        self._zap_montior(signal_name)
 
     def _on_menu(self, event):
         Id = event.GetId()
