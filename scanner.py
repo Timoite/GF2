@@ -200,4 +200,5 @@ class Scanner:
             symbol.type = self.EOF
         else:  # Out-of-alphabet characters do not have a defined type
             self._advance()
+        print(f"Symbol created: {symbol.type}, ID: {symbol.id}")
         return symbol
