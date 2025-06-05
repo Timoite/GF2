@@ -14,48 +14,23 @@ import sys
 
 
 class MyGLCanvas(wxcanvas.GLCanvas):
-    """Handle all drawing operations.
 
-    This class contains functions for drawing onto the canvas. It
-    also contains handlers for events relating to the canvas.
-
-    Parameters
-    ----------
-    parent: parent window.
-    devices: instance of the devices.Devices() class.
-    monitors: instance of the monitors.Monitors() class.
-
-    Public methods
-    --------------
-    init_gl(self): Configures the OpenGL context.
-
-    render(self, text): Handles all drawing operations.
-
-    on_paint(self, event): Handles the paint event.
-
-    on_size(self, event): Handles the canvas resize event.
-
-    on_mouse(self, event): Handles mouse events.
-
-    render_text(self, text, x_pos, y_pos): Handles text drawing
-                                           operations.
-    """
-
-    def __init__(self, parent):
+    def __init__(self, parent, monitors):
         """Initialise canvas properties and useful variables."""
         super().__init__(parent, -1,
                          attribList=[wxcanvas.WX_GL_RGBA,
                                      wxcanvas.WX_GL_DOUBLEBUFFER,
                                      wxcanvas.WX_GL_DEPTH_SIZE, 16, 0])
+        self.SetSize(200,200)
         GLUT.glutInit()
         self.init = False
         self.context = wxcanvas.GLContext(self)
 
+        
+
         # Initialise variables for panning
         self.pan_x = 0
         self.pan_y = 0
-        self.last_mouse_x = 0  # previous mouse x position
-        self.last_mouse_y = 0  # previous mouse y position
 
         # Initialise variables for zooming
         self.zoom = 1
@@ -63,7 +38,6 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         # Bind events to the canvas
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_SIZE, self.on_size)
-        self.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse)
 
     def init_gl(self):
         """Configure and initialise the OpenGL context."""
@@ -94,6 +68,14 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         # Draw specified text at position (10, 10)
         self.render_text(text, 10, 10)
 
+        # Render signals
+        try:
+            self.render_signals()
+        except AttributeError:
+            # Sim has not been run yet
+            pass
+        
+
         # Draw a sample signal trace
         GL.glColor3f(0.0, 0.0, 1.0)  # signal trace is blue
         GL.glBegin(GL.GL_LINE_STRIP)
@@ -112,6 +94,13 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         # and swap the back buffer to the front
         GL.glFlush()
         self.SwapBuffers()
+
+    def render_signals():
+        for monitored_signal_name in self.monitors.get_signal_names()[0]:
+            self._add_monitor(monitored_signal_name)
+        for signal_list in self.monitors.monitors_dictionary:
+            self.monitors.monitors_dictionary[signal_list] = []
+
 
     def on_paint(self, event):
         """Handle the paint event."""
@@ -132,57 +121,6 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         # matrices on the next paint event
         self.init = False
 
-    def on_mouse(self, event):
-        """Handle mouse events."""
-        text = ""
-        # Calculate object coordinates of the mouse position
-        size = self.GetClientSize()
-        ox = (event.GetX() - self.pan_x) / self.zoom
-        oy = (size.height - event.GetY() - self.pan_y) / self.zoom
-        old_zoom = self.zoom
-        if event.ButtonDown():
-            self.last_mouse_x = event.GetX()
-            self.last_mouse_y = event.GetY()
-            text = "".join(["Mouse button pressed at: ", str(event.GetX()),
-                            ", ", str(event.GetY())])
-        if event.ButtonUp():
-            text = "".join(["Mouse button released at: ", str(event.GetX()),
-                            ", ", str(event.GetY())])
-        if event.Leaving():
-            text = "".join(["Mouse left canvas at: ", str(event.GetX()),
-                            ", ", str(event.GetY())])
-        if event.Dragging():
-            self.pan_x += event.GetX() - self.last_mouse_x
-            self.pan_y -= event.GetY() - self.last_mouse_y
-            self.last_mouse_x = event.GetX()
-            self.last_mouse_y = event.GetY()
-            self.init = False
-            text = "".join(["Mouse dragged to: ", str(event.GetX()),
-                            ", ", str(event.GetY()), ". Pan is now: ",
-                            str(self.pan_x), ", ", str(self.pan_y)])
-        if event.GetWheelRotation() < 0:
-            self.zoom *= (1.0 + (
-                event.GetWheelRotation() / (20 * event.GetWheelDelta())))
-            # Adjust pan so as to zoom around the mouse position
-            self.pan_x -= (self.zoom - old_zoom) * ox
-            self.pan_y -= (self.zoom - old_zoom) * oy
-            self.init = False
-            text = "".join(["Negative mouse wheel rotation. Zoom is now: ",
-                            str(self.zoom)])
-        if event.GetWheelRotation() > 0:
-            self.zoom /= (1.0 - (
-                event.GetWheelRotation() / (20 * event.GetWheelDelta())))
-            # Adjust pan so as to zoom around the mouse position
-            self.pan_x -= (self.zoom - old_zoom) * ox
-            self.pan_y -= (self.zoom - old_zoom) * oy
-            self.init = False
-            text = "".join(["Positive mouse wheel rotation. Zoom is now: ",
-                            str(self.zoom)])
-        if text:
-            self.render(text)
-        else:
-            self.Refresh()  # triggers the paint event
-
     def render_text(self, text, x_pos, y_pos):
         """Handle text drawing operations."""
         GL.glColor3f(0.0, 0.0, 0.0)  # text is black
@@ -195,7 +133,6 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 GL.glRasterPos2f(x_pos, y_pos)
             else:
                 GLUT.glutBitmapCharacter(font, ord(character))
-
 
 class Gui(wx.Frame):
     """Configure the main window and all the widgets.
@@ -219,11 +156,17 @@ class Gui(wx.Frame):
 
         # Configure the file menu
         fileMenu = wx.Menu()
-        menuBar = wx.MenuBar()
         fileMenu.Append(self.OPEN_ID, "&Open")
         fileMenu.Append(self.ABOUT_ID, "&About")
         fileMenu.Append(self.QUIT_ID, "&Exit")
+        runMenu = wx.Menu()
+        runMenu.Append(self.OPEN_ID, "&Run")
+        runMenu.Append(self.OPEN_ID, "&Continue")
+        runMenu.Append(self.OPEN_ID, "&Play")
+        runMenu.Append(self.OPEN_ID, "&Pause")
+        menuBar = wx.MenuBar()
         menuBar.Append(fileMenu, "&File")
+        menuBar.Append(runMenu, "&Run")
         self.SetMenuBar(menuBar)
 
         # Configure the toolbar
@@ -235,9 +178,6 @@ class Gui(wx.Frame):
         toolbar.Bind(wx.EVT_TOOL, self._on_toolbar)
         toolbar.Realize()
         self.ToolBar = toolbar
-
-        # Canvas for drawing signals
-        self.canvas = MyGLCanvas(self)
 
         # Configure the widgets
         run_text = wx.StaticText(self, wx.ID_ANY, "Run for N cycles:")
@@ -265,15 +205,22 @@ class Gui(wx.Frame):
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
         UI_sizer = wx.BoxSizer(wx.VERTICAL)
         main_sizer.Add(UI_sizer)
-        main_sizer.Add(self.canvas, 1, wx.EXPAND | wx.ALL, 5)
+
+        self.scrollable = wx.ScrolledCanvas(self, wx.ID_ANY )
+        # self.scrollable.SetSizeHints(200, 200)
+        # self.scrollable.ShowScrollbars(wx.SHOW_SB_ALWAYS,wx.SHOW_SB_DEFAULT)
+        self.scrollable.SetScrollbars(20, 20, 50, 50)
+        self.canvas = MyGLCanvas(self.scrollable)
+        # self.canvas.SetSizeHints(500,500)
+        main_sizer.Add(self.scrollable, 1, wx.EXPAND | wx.ALL, 5)
 
         run_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
         monitors_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
         switches_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
-        self.switch_rows_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.scrolled_panel = wx.ScrolledWindow(self, style=wx.VSCROLL)
-        self.scrolled_panel.SetScrollRate(10, 10)
-        self.scrolled_panel.SetSizer(self.switch_rows_sizer)
+        self.switches_rows_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.switches_scroll = wx.ScrolledWindow(self, style=wx.VSCROLL)
+        self.switches_scroll.SetScrollRate(10, 10)
+        self.switches_scroll.SetSizer(self.switches_rows_sizer)
         UI_sizer.Add(run_sizer, 0, wx.EXPAND | wx.ALL, 5)
         UI_sizer.Add(monitors_sizer, 0, wx.EXPAND | wx.ALL, 5)
         UI_sizer.Add(switches_sizer, 1, wx.EXPAND | wx.ALL, 5)
@@ -296,8 +243,8 @@ class Gui(wx.Frame):
         zap_sizer.Add(zap_text, 0, wx.CENTER | wx.ALL, 10)
         zap_sizer.Add(self.zap_choice, 0, wx.CENTER)
         switches_sizer.Add(switches_text, 1, wx.CENTER | wx.ALL, 10)
-        switches_sizer.Add(self.scrolled_panel, 10, wx.EXPAND | wx.CENTER)
-        self.switch_rows_sizer.Fit(self.scrolled_panel)
+        switches_sizer.Add(self.switches_scroll, 100, wx.EXPAND | wx.CENTER)
+        self.switches_rows_sizer.Fit(self.switches_scroll)
 
         # Bind events to widgets
         self.Bind(wx.EVT_MENU, self._on_menu)
@@ -315,10 +262,10 @@ class Gui(wx.Frame):
     def _add_switch(self, switch_id, switch_state):
         """Add a switch to GUI."""
         switch_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.switch_rows_sizer.Add(switch_sizer, 0, wx.CENTER | wx.ALL, 5)
-        text = wx.StaticText(self.scrolled_panel, wx.ID_ANY, switch_id)
+        self.switches_rows_sizer.Add(switch_sizer, 0, wx.CENTER | wx.ALL, 5)
+        text = wx.StaticText(self.switches_scroll, wx.ID_ANY, switch_id)
         switch_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 5)
-        switch_radiobox = wx.RadioBox(self.scrolled_panel, wx.ID_ANY, "", choices=['0', '1'])
+        switch_radiobox = wx.RadioBox(self.switches_scroll, wx.ID_ANY, "", choices=['0', '1'])
         switch_radiobox.SetSelection(switch_state)
         switch_sizer.Add(switch_radiobox, 0, wx.CENTER)
         switch_radiobox.Bind(wx.EVT_RADIOBOX, lambda evt,
