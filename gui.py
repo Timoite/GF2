@@ -100,13 +100,17 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                                                    output_id]
 
             # Scaling the drawing
-            i = 0
-            y_HIGH = 25
-            y_LOW = 5
-            dx = 8
-            starting_x = dx / 2
-            scalef = (self.initial_size.width - dx) \
-                / (self.cycles_completed * dx)
+            Y_HIGH = 25
+            Y_LOW = 5
+            DX = 8
+            MAX_CYCLES_TO_DISPLAY = 100
+            starting_x = DX / 2
+            if self.cycles_completed > MAX_CYCLES_TO_DISPLAY:
+                cycles_to_display = MAX_CYCLES_TO_DISPLAY
+            else:
+                cycles_to_display = self.cycles_completed
+            scalef = (self.initial_size.width - DX) \
+                / (cycles_to_display * DX)
             if scalef < 1:
                 GL.glScalef(scalef, 1.0, 1.0)
                 starting_x /= scalef
@@ -114,27 +118,32 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             # Drawing
             GL.glColor3f(1.0, 0.0, 0.0)  # signal trace is red
             GL.glBegin(GL.GL_LINE_STRIP)
+            i = 0
+            cycle_count = 0
             for signal in signal_list:
-                x = (i * dx) + starting_x
-                x_next = (i * dx) + starting_x + dx
-                if signal == self.devices.HIGH:
-                    y = y_HIGH
-                    y_next = y_HIGH
-                if signal == self.devices.LOW:
-                    y = y_LOW
-                    y_next = y_LOW
-                if signal == self.devices.RISING:
-                    y = y_LOW
-                    y_next = y_HIGH
-                if signal == self.devices.FALLING:
-                    y = y_HIGH
-                    y_next = y_LOW
-                if signal == self.devices.BLANK:
+                print(cycle_count, self.cycles_completed)
+                if cycle_count > (self.cycles_completed - MAX_CYCLES_TO_DISPLAY):
+                    x = (i * DX) + starting_x
+                    x_next = (i * DX) + starting_x + DX
+                    if signal == self.devices.HIGH:
+                        y = Y_HIGH
+                        y_next = Y_HIGH
+                    if signal == self.devices.LOW:
+                        y = Y_LOW
+                        y_next = Y_LOW
+                    if signal == self.devices.RISING:
+                        y = Y_LOW
+                        y_next = Y_HIGH
+                    if signal == self.devices.FALLING:
+                        y = Y_HIGH
+                        y_next = Y_LOW
+                    if signal == self.devices.BLANK:
+                        i += 1
+                        continue
+                    GL.glVertex2f(x, y)
+                    GL.glVertex2f(x_next, y_next)
                     i += 1
-                    continue
-                GL.glVertex2f(x, y)
-                GL.glVertex2f(x_next, y_next)
-                i += 1
+                cycle_count += 1
             GL.glEnd()
 
             # Reset scaling
