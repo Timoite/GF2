@@ -183,6 +183,27 @@ class Gui(wx.Frame):
         self.monitors = None
         self.cycles_completed = 0
 
+        self.OPEN_ID = 998
+        self.QUIT_ID = 999
+
+        # Configure the file menu
+        fileMenu = wx.Menu()
+        menuBar = wx.MenuBar()
+        fileMenu.Append(100, "&Open")
+        fileMenu.Append(101, "&Exit")
+        menuBar.Append(fileMenu, "&File")
+        self.SetMenuBar(menuBar)
+
+        # Configure the toolbar
+        toolbar=self.CreateToolBar()
+        myimage=wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR)
+        toolbar.AddTool(self.OPEN_ID,"Open file", myimage)
+        myimage=wx.ArtProvider.GetBitmap(wx.ART_QUIT, wx.ART_TOOLBAR)
+        toolbar.AddTool(self.QUIT_ID,"Quit", myimage)
+        toolbar.Bind(wx.EVT_TOOL, self._on_toolbar)
+        toolbar.Realize()
+        self.ToolBar = toolbar
+
         # Configure sizers for layout
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         upper_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -196,23 +217,25 @@ class Gui(wx.Frame):
         upper_sizer.Add(io_sizer, 2, wx.EXPAND | wx.RIGHT, 10)
         upper_sizer.Add(switches_sizer, 1, wx.EXPAND, 0)
 
-        self.fileio_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        # self.fileio_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.run_cont_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.cycles_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.total_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        io_sizer.Add(self.fileio_sizer, 0, wx.ALL | wx.CENTER, 5)
+        # io_sizer.Add(self.fileio_sizer, 0, wx.ALL | wx.CENTER, 5)
         io_sizer.Add(self.cycles_sizer, 0, wx.TOP | wx.CENTER, 15)
         io_sizer.Add(self.run_cont_sizer, 0, wx.ALL | wx.CENTER, 10)
         io_sizer.Add(self.total_sizer, 0, wx.BOTTOM | wx.CENTER, 5)
 
         """Configure the widgets"""
         # File io widgets
-        open_image = wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR)
-        open_button = wx.BitmapButton(self, wx.ID_ANY, open_image)
-        self.fileio_sizer.Add(open_button, 1, wx.RIGHT, 5)
-        quit_image = wx.ArtProvider.GetBitmap(wx.ART_QUIT, wx.ART_TOOLBAR)
-        quit_button = wx.BitmapButton(self, wx.ID_ANY, quit_image)
-        self.fileio_sizer.Add(quit_button, 1, wx.LEFT, 5)
+        # open_image = wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR)
+        # open_button = wx.Button(self, wx.ID_ANY, "Open File")
+        # open_button.SetBitmap(open_image, wx.TOP)
+        # self.fileio_sizer.Add(open_button, 1, wx.RIGHT, 5)
+        # quit_image = wx.ArtProvider.GetBitmap(wx.ART_QUIT, wx.ART_TOOLBAR)
+        # quit_button = wx.Button(self, wx.ID_ANY, "Quit")
+        # quit_button.SetBitmap(quit_image, wx.TOP)
+        # self.fileio_sizer.Add(quit_button, 1, wx.LEFT, 5)
 
         # Cycles widgets
         text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
@@ -250,21 +273,23 @@ class Gui(wx.Frame):
         lower_sizer.Add(self.scrolled_panel, 0, wx.EXPAND)
         self.monitor_rows_sizer.Fit(self.scrolled_panel)
         self.monitor_rows = {}
-        # Add monitor widgets
-        add_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        lower_sizer.Add(add_sizer, 0, wx.EXPAND)
-        add_image = wx.ArtProvider.GetBitmap(wx.ART_PLUS)
-        add_button = wx.BitmapButton(self, wx.ID_ANY, add_image)
-        add_sizer.Add(add_button, 0, wx.ALL, 5)
-        self.choice = wx.Choice(self, choices=[])
-        add_sizer.Add(self.choice, 0, wx.CENTER | wx.RIGHT, 15)
+        add_zap_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        lower_sizer.Add(add_zap_sizer, 0, wx.EXPAND)
+        # Widgets to add monitor
+        add_sizer = wx.StaticBoxSizer(wx.HORIZONTAL, self)
+        add_zap_sizer.Add(add_sizer, 1, wx.EXPAND | wx.RIGHT, 5)
+        text = wx.StaticText(self, wx.ID_ANY, "Add monitor:")
+        add_sizer.Add(text, 0, wx.ALL | wx.CENTER, 10)
+        self.add_choice = wx.Choice(self, choices=[])
+        add_sizer.Add(self.add_choice, 0, wx.CENTER | wx.RIGHT, 15)
 
         # Bind events to widgets
-        open_button.Bind(wx.EVT_BUTTON, self._open_file)
-        quit_button.Bind(wx.EVT_BUTTON, self._quit)
+        self.Bind(wx.EVT_MENU, self._on_menu)
+        # open_button.Bind(wx.EVT_BUTTON, self._open_file)
+        # quit_button.Bind(wx.EVT_BUTTON, self._quit)
         run_button.Bind(wx.EVT_BUTTON, self._run)
         cont_button.Bind(wx.EVT_BUTTON, self._continue_)
-        add_button.Bind(wx.EVT_BUTTON, self._create_monitor)
+        self.add_choice.Bind(wx.EVT_CHOICE, self._on_choice)
 
         # Set screen size
         self.SetSizeHints(500, 500)
@@ -292,7 +317,7 @@ class Gui(wx.Frame):
         if not self.devices.set_switch(switch_id, switch_state):
             print("Error! Invalid switch.")
 
-    def _create_monitor(self, event):
+    def _create_monitor(self, signal_name):
         """Create a new monitor."""
         # Handle the case that no file has yet been opened
         if not self.monitors:
@@ -300,11 +325,6 @@ class Gui(wx.Frame):
             return
 
         # Get which signal to add
-        signal_int = self.choice.GetSelection()
-        if signal_int == -1:  # No signals left to add
-            print("Error! Could not make monitor.")
-            return
-        signal_name = self.monitors.get_signal_names()[1][signal_int]
         [device_id, output_id] = self.devices.get_signal_ids(signal_name)
         device_id = self.names.get_name_string(device_id)
 
@@ -324,26 +344,16 @@ class Gui(wx.Frame):
         monitor_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.monitor_rows[signal_name] = monitor_sizer
         self.monitor_rows_sizer.Add(monitor_sizer, 0, wx.EXPAND, 0)
-        minus_image = wx.ArtProvider.GetBitmap(wx.ART_MINUS)
-        zap_button = wx.BitmapButton(
-            self.scrolled_panel, wx.ID_ANY, minus_image)
         text = wx.StaticText(self.scrolled_panel, wx.ID_ANY, signal_name)
-        text.SetMinSize((100, -1))
-        monitor_sizer.Add(zap_button, 0, wx.CENTER | wx.ALL, 5)
-        monitor_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 10)
+        text.SetMinSize((120, -1))
+        monitor_sizer.Add(text, 0, wx.CENTER | wx.ALL, 13)
         self.canvas = MyGLCanvas(self.scrolled_panel, signal_name)
         monitor_sizer.Add(self.canvas, 1, wx.EXPAND | wx.CENTER | wx.ALL, 5)
 
         # Redraw gui
         self.Layout()
 
-        # Bind zap button
-        zap_button.Bind(wx.EVT_BUTTON,
-                        lambda evt, temp=signal_name:
-                        self._zap_montior(evt, temp))
-
-        # Set options on choice
-        self.choice.SetItems(self.monitors.get_signal_names()[1])
+        self._set_choice_options()
 
         self._janky_linux_resizing_fix()
 
@@ -359,11 +369,41 @@ class Gui(wx.Frame):
             self.monitor_rows.pop(signal_name)
             self.Layout()
             self._janky_linux_resizing_fix()
-            # Set options on choice
-            self.choice.SetItems(self.monitors.get_signal_names()[1])
+            self._set_choice_options()
             print("Successfully zapped monitor.")
         else:
             print("Error! Could not zap monitor.")
+
+    def _set_choice_options(self):
+        # Set options on choice
+        default = "- Select -"
+        # choices = [default]
+        choices = self.monitors.get_signal_names()[1]
+        choices.insert(0, default)
+        print(choices)
+        self.add_choice.SetItems(choices)
+        self.add_choice.SetSelection(0)
+
+    def _on_choice(self, event):
+        signal_int = self.add_choice.GetSelection()
+        if signal_int == 0:  # No signals left to add
+            return
+        signal_name = self.monitors.get_signal_names()[1][signal_int - 1]
+        self._create_monitor(signal_name)
+
+    def _on_menu(self, event):
+        Id = event.GetId()
+        if Id  == self.OPEN_ID:
+            self._open_file(event)
+        elif Id == self.QUIT_ID:
+            self._quit(event)
+
+    def _on_toolbar(self, event): 
+        Id = event.GetId()
+        if Id  == self.OPEN_ID:
+            self._open_file(event)
+        elif Id == self.QUIT_ID:
+            self._quit(event)
 
     def _open_file(self, event):
         """Open a file specified by the user."""
@@ -408,8 +448,7 @@ class Gui(wx.Frame):
             switch_state = switch.switch_state
             self._add_switch(switch_id, switch_state)
 
-        # Set options on choice to non monitored signals
-        self.choice.SetItems(self.monitors.get_signal_names()[1])
+        self._set_choice_options()
 
         # Add monitors and ensure they are cleared
         for monitored_signal_name in self.monitors.get_signal_names()[0]:
