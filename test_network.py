@@ -259,7 +259,7 @@ def test_execute_non_xor_gates(new_network, gate_id, switch_outputs,
 def test_execute_non_gates(new_network):
     """Test if execute_network returns the correct output for non-gate devices.
 
-    Tests switches, D-types and clocks.
+    Tests switches, D-types, clocks and siggens.
     """
     network = new_network
     devices = network.devices
@@ -269,13 +269,15 @@ def test_execute_non_gates(new_network):
     HIGH = devices.HIGH
 
     # Make different devices
-    [SW1_ID, SW2_ID, SW3_ID, CL_ID, D_ID] = names.lookup(["Sw1", "Sw2", "Sw3",
-                                                          "Clock1", "D1"])
+    [SW1_ID, SW2_ID, SW3_ID,
+     CL_ID, D_ID, SIG_ID] = names.lookup(["Sw1", "Sw2", "Sw3",
+                                          "Clock1", "D1", "Sig1"])
     devices.make_device(SW1_ID, devices.SWITCH, 1)
     devices.make_device(SW2_ID, devices.SWITCH, 0)
     devices.make_device(SW3_ID, devices.SWITCH, 0)
     devices.make_device(CL_ID, devices.CLOCK, 1)
     devices.make_device(D_ID, devices.D_TYPE)
+    devices.make_device(SIG_ID, devices.SIGGEN, "01101")
 
     # Make connections
     network.make_connection(SW1_ID, None, D_ID, devices.DATA_ID)
@@ -291,6 +293,7 @@ def test_execute_non_gates(new_network):
     clock_output = "network.get_output_signal(CL_ID, None)"
     dtype_Q = "network.get_output_signal(D_ID, devices.Q_ID)"
     dtype_QBAR = "network.get_output_signal(D_ID, devices.QBAR_ID)"
+    siggen_output = "network.get_output_signal(SIG_ID, None)"
 
     # Execute devices until the clock is LOW at the start of its
     # period
@@ -332,6 +335,17 @@ def test_execute_non_gates(new_network):
     assert [eval(sw1_output), eval(sw2_output), eval(sw3_output),
             eval(clock_output), eval(dtype_Q), eval(dtype_QBAR)] == [
                 HIGH, LOW, HIGH, HIGH, LOW, HIGH]
+    # Run network enough times to guarantee one full iteration of the siggen
+    i = 0
+    siggen_string = ""
+    while i < 9:
+        network.execute_network()
+        if eval(siggen_output) == HIGH:
+            siggen_string = siggen_string + "1"
+        else:
+            siggen_string = siggen_string + "0"
+        i += 1
+    assert "01101" in siggen_string
 
 
 def test_oscillating_network(new_network):
