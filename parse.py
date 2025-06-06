@@ -104,10 +104,14 @@ class Parser:
 
         if self.error_count == 1:
             if next_symbol == "No symbol":
-                print("Error: The parser has recieved an empty symbol, "
-                      "indicating the provided file contains no symbols. "
-                      "(Check your comments: it is possible that every "
-                      "valid symbol has been commented out.)")
+                print("Error: The parser has recieved an empty symbol. "
+                      "This may indicate the provided file contains no "
+                      "symbols (check your comments: it is possible "
+                      "that every valid symbol has been commented out) "
+                      "or that the parser has recieved a symbol not 
+                      "found in its alphabet (acceptable characters are "
+                      "alphanumeric characters, '>', '_', '-', ',', "
+                      "'#', '=' and '/'.)"
             elif next_symbol in ["DEVICES", "CONNECTIONS", "MONITORS", "END"]:
                 print("Error in line:")
                 print(current_line)
