@@ -76,7 +76,7 @@ class Scanner:
         ]
         self.device_list = [
             "AND", "OR", "NAND", "NOR",
-            "XOR", "CLOCK", "SWITCH", "DTYPE"
+            "XOR", "CLOCK", "SWITCH", "DTYPE", "SIGGEN"
         ]
 
         # Look up ID from names
@@ -85,7 +85,7 @@ class Scanner:
             self.names.lookup(self.keywords_list)
         [self.AND_ID, self.OR_ID, self.NAND_ID,
          self.NOR_ID, self.XOR_ID, self.CLOCK_ID,
-         self.SWITCH_ID, self.DTYPE_ID] = \
+         self.SWITCH_ID, self.DTYPE_ID, self.SIGGEN_ID] = \
             self.names.lookup(self.device_list)
         self._advance()
 

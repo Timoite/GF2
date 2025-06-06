@@ -67,9 +67,10 @@ class Parser:
                            self.devices.QUALIFIER_PRESENT,
                            self.devices.DEVICE_PRESENT,
                            self.devices.NO_QUALIFIER,
+                           self.devices.NOT_BINARY,
                            self.monitors.NOT_OUTPUT,
                            self.monitors.MONITOR_PRESENT,
-                           self.UNCONNECTED_INPUT] = range(30)
+                           self.UNCONNECTED_INPUT] = range(31)
 
     def _error(self, error_type, current_line, next_symbol, stopping_symbol):
         """Generate a command line report for the first error found."""
@@ -127,7 +128,7 @@ class Parser:
         elif error_type == self.NOT_DEVICE_NAME:
             print("Error: This device type does not match any code known by "
                   "this logic simulator. Valid devices are AND, CLOCK, "
-                  "DTYPE, NAND, NOR, OR, SWITCH, XOR.")
+                  "DTYPE, NAND, NOR, OR, SWITCH, XOR, SIGGEN.")
         elif error_type == self.devices.BAD_DEVICE:
             arrow_pos = self._seek_error(current_line, "=")
             print("Error in line:")
@@ -280,6 +281,17 @@ class Parser:
             arrow_str = arrow_str + "^"
             print(arrow_str)
             print("Error: Devices of this type should not have a qualifier.")
+        elif error_type == self.devices.NOT_BINARY:
+            arrow_pos = self._seek_error(current_line, "/")
+            print("Error in line:")
+            print(current_line)
+            i = 0
+            while i < arrow_pos:
+                arrow_str = arrow_str + " "
+                i += 1
+            arrow_str = arrow_str + "^"
+            print(arrow_str)
+            print("Error: This device's qualifier should be a binary number.")
         elif error_type == self.devices.DEVICE_PRESENT:
             print("Error in line:")
             print(current_line)
@@ -436,7 +448,11 @@ class Parser:
                 current_line = current_line + "/"
                 self.symbol = self.scanner.get_symbol()
                 if self.symbol.type == self.scanner.INTEGER:
-                    qualifier = int(self.names.get_name_string(self.symbol.id))
+                    if not device == "SIGGEN":
+                        qualifier = int(self.names.get_name_string
+                                        (self.symbol.id))
+                    else:
+                        qualifier = self.names.get_name_string(self.symbol.id)
                     current_line = current_line + str(qualifier)
                     self.symbol = self.scanner.get_symbol()
                 else:
@@ -487,6 +503,9 @@ class Parser:
                                              qualifier)
         elif device == "DTYPE":
             error = self.devices.make_device(deviceID, self.devices.D_TYPE,
+                                             qualifier)
+        elif device == "SIGGEN":
+            error = self.devices.make_device(deviceID, self.devices.SIGGEN,
                                              qualifier)
         else:
             error = self.devices.NO_ERROR

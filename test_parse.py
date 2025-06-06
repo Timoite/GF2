@@ -107,6 +107,8 @@ ERROR_CASES: dict[str, str] = {
         "already a monitor connected to this output port",
     "device_has_unconnected_input.txt":  # UNCONNECTED_INPUT
         "contains at least one device with an unconnected input",
+    "not_binary.txt":  # NOT_BINARY
+        "This device's qualifier should be a binary number"
 }
 
 
