@@ -52,7 +52,7 @@ def test_valid_file_is_accepted(parser_factory, capsys):
 ERROR_CASES: dict[str, str] = {
     # Syntax / format errors
     "missing_comma.txt":
-        "expected a right arrow, comma, keyword or equals symbol",
+        "expected a dash, comma or the MONITORS keyword",
     "missing_string.txt":  # MISSING_STRING
         "expected a string",
     "missing_integer.txt":  # MISSING_INTEGER
@@ -62,15 +62,17 @@ ERROR_CASES: dict[str, str] = {
     "missing_equals_symbol.txt":  # MISSING_EQUALS
         "expected an equals symbol",
     "missing_devices_keyword.txt":  # MISSING_DEVICES_HEADER
-        "Missing the section header keyword for devices",
+        "Error: the keywords DEVICES, CONNECTIONS, MONITORS and "
+        "END should only appear once each,",
     "missing_connections_keyword.txt":  # MISSING_CONNECTIONS_HEADER
-        "Missing the section header keyword for connections",
+        "Error: the keywords DEVICES, CONNECTIONS, MONITORS and "
+        "END should only appear once each,",
     "missing_monitors_keyword.txt":  # MISSING_MONITORS_HEADER
-        "Missing the section header keyword for monitors",
+        "Expected a dash, comma or the MONITORS keyword",
     "unknown_keyword.txt":  # Tested with wrong keyword
-        "Error in format",
+        "Expected a dash, comma or the MONITORS keyword",
     "missing_end_of_file.txt":  # MISSING_END_HEADER
-        "Missing the end-of-file keyword.",
+        "Expected a comma or the END keyword.",
     # Device-level errors
     "bad_device.txt":  # BAD_DEVICE & NOT_DEVICE_NAME
         "device type does not match any code known",

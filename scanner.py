@@ -94,6 +94,8 @@ class Scanner:
         while True:
             if self.current_character not in [" ", "\n"]:
                 break
+            elif len(self.contents) == 0:
+                break
             self._advance()
 
     def _skip_comment(self):
@@ -118,10 +120,27 @@ class Scanner:
         while True:
             if self.current_character == "#":
                 self._skip_comment()
+            elif len(self.contents) == 0:
+                string += self.current_character
+                return string
+            elif self.current_character in ["", "\n"]:
+                self._skip_whitespace()
             elif (self.current_character.isalnum()
                   or self.current_character == "_"):
                 string += self.current_character
                 self._advance()
+                """If a keyword is found at the end of a string, this section
+                ensures the connection is recorded seperately"""
+                for i in self.keywords_list:
+                    if i in string and string != i:
+                        replaced = []
+                        for char in i:
+                            replaced.append(char)
+                        self.contents = replaced + self.contents
+                        string = string.removesuffix(i)
+                        return string
+                    elif i in string:
+                        return string
             else:  # Stop at the first non-letter character
                 break
         return string
@@ -131,13 +150,18 @@ class Scanner:
 
         Skips comments and whitespace if encountered.
         """
-        integer = self.current_character
+        integer = ""
         while True:
-            self._advance()
             if self.current_character == "#":
                 self._skip_comment()
+            elif len(self.contents) == 0:
+                integer += self.current_character
+                return integer
+            elif self.current_character in ["", "\n"]:
+                self._skip_whitespace()
             elif self.current_character.isdigit():
                 integer += self.current_character
+                self._advance()
             else:
                 break
         return integer
@@ -155,11 +179,13 @@ class Scanner:
         """Translate the next sequence of characters into a symbol."""
         # Create a new symbol to return
         symbol = Symbol()
-        self._skip_whitespace()
+        if not len(self.contents) == 0:
+            self._skip_whitespace()
         # Skip comments, if found, and leading whitespace
         if self.current_character == "#":
             self._skip_comment()
-        self._skip_whitespace()
+        if not len(self.contents) == 0:
+            self._skip_whitespace()
         if self.current_character.isalpha():  # Strings, keywords, device types
             string = self._get_string()
             if string in self.keywords_list:
@@ -200,5 +226,6 @@ class Scanner:
         elif self.current_character == "":  # End of file
             symbol.type = self.EOF
         else:  # Out-of-alphabet characters do not have a defined type
+            symbol.id = self.names.lookup([self.current_character])[0]
             self._advance()
         return symbol

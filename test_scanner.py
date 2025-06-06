@@ -35,7 +35,8 @@ def test_correct_symbols(new_scanner):
         symbol = scanner.get_symbol()
         symbol_types.append(symbol.type)
         i += 1
-    assert symbol_types == [0, 4, 1, 5, 2, 6, 3, 7, 8, 9, 10]
+    assert symbol_types == [0, 4, 1, 5, 2, 6, 3, 7, 8, 9, None]
+    # In normal operation EOF is now skipped as whitespace
 
 
 def test_keywords(new_scanner):
