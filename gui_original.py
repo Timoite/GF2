@@ -42,13 +42,14 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         self.pan_x = 0
         self.pan_y = 0
         self.max_x = 2000
-        self.max_y = 2000
+        self.max_y = 600
         self.size = self.GetClientSize()
         self.last_mouse_x = 0  # previous mouse x position
         self.last_mouse_y = 0  # previous mouse y position
 
         # Initialise variables for zooming
-        self.zoom = 1
+        self.zoom_x = 1
+        self.zoom_y = 1
 
         # Bind events to the canvas
         self.Bind(wx.EVT_PAINT, self.on_paint)
@@ -68,9 +69,9 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GL.glMatrixMode(GL.GL_MODELVIEW)
         GL.glLoadIdentity()
         GL.glTranslated(self.pan_x, self.pan_y, 0.0)
-        GL.glScaled(self.zoom, self.zoom, self.zoom)
+        GL.glScaled(self.zoom_x, self.zoom_x, self.zoom_x)
 
-    def render(self, text):
+    def render(self, text=""):
         """Handle all drawing operations."""
         self.SetCurrent(self.context)
         if not self.init:
@@ -89,9 +90,33 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         center_y = size.height // 2
         self.render_text(text, center_x, center_y, "center")
 
+        if self.size.width / self.zoom_x >= self.max_x:
+            self.max_x = self.size.width / self.zoom_x
+            self.parent.hscrollbar.Hide()
+        else:
+            self.max_x = 2000
+            self.parent.hscrollbar.Show()
+        if self.size.height / self.zoom_y >= self.max_y:
+            self.max_y = self.size.height / self.zoom_y
+            self.parent.vscrollbar.Hide()
+        else:
+            self.max_y = 600
+            self.parent.vscrollbar.Show()
+
+        if self.pan_x > 0:
+            self.pan_x = 0
+        elif (self.size.width - self.pan_x) / self.zoom_x > self.max_x:
+            self.pan_x = self.size.width - (self.max_x * self.zoom_x)
+        if self.pan_y < 0:
+            self.pan_y = 0
+        elif (self.pan_y + self.size.height) / self.zoom_y > self.max_y:
+            self.pan_y = (self.max_y * self.zoom_y) - self.size.height
+
+        self.parent.update_scrollbars()
+
         # Apply pan and zoom
         GL.glTranslated(self.pan_x, self.pan_y, 0.0)
-        GL.glScaled(self.zoom, self.zoom, self.zoom)
+        GL.glScaled(self.zoom_x, self.zoom_y, 1.0)
 
         # ---- Draw zoom/pan-sensitive content here ----
         GL.glColor3f(0.0, 0.0, 1.0)  # signal trace is blue
@@ -120,8 +145,9 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             self.init = True
 
         self.size = self.GetClientSize()
-        text = "".join(["Canvas redrawn on paint event, size is ",
+        text = "".join(["Canvas redrawn on paint event:\n Size is ",
                         str(self.size.width), ", ", str(self.size.height)])
+
         self.render(text)
         self.parent.update_scrollbars()
 
@@ -133,28 +159,28 @@ class MyGLCanvas(wxcanvas.GLCanvas):
 
     def on_mouse(self, event):
         """Handle mouse events."""
-        text = ""
         # Calculate object coordinates of the mouse position
-        size = self.GetClientSize()
-        ox = (event.GetX() - self.pan_x) / self.zoom
-        oy = (size.height - event.GetY() - self.pan_y) / self.zoom
-        old_zoom = self.zoom
+        # size = self.GetClientSize()
+        ox = (event.GetX() - self.pan_x) / self.zoom_x
+        # oy = (size.height - event.GetY() - self.pan_y) / self.zoom
+        old_zoom_x = self.zoom_x
+        # old_zoom_y = self.zoom_y
 
         wheel_rotation, wheel_delta = event.GetWheelRotation(), event.GetWheelDelta()
         if wheel_rotation != 0:
             # Zooming
             if event.ControlDown():
                 if wheel_rotation < 0:
-                    self.zoom *= (1.0 + (
+                    self.zoom_x *= (1.0 - (
                         wheel_rotation / (20 * wheel_delta)))
                 if wheel_rotation > 0:
-                    self.zoom /= (1.0 - (
+                    self.zoom_x /= (1.0 + (
                         wheel_rotation / (20 * wheel_delta)))
                 # Adjust pan so as to zoom around the mouse position
-                self.pan_x -= (self.zoom - old_zoom) * ox
-                self.pan_y -= (self.zoom - old_zoom) * oy
+                self.pan_x -= (self.zoom_x - old_zoom_x) * ox
+                # self.pan_y -= (self.zoom_y - old_zoom_y) * oy
 
-            # Horizontal panning
+            # Horizontal scrolling
             elif event.ShiftDown():
                 dPANx = 10
                 if wheel_rotation < 0:
@@ -162,50 +188,44 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 if wheel_rotation > 0:
                     self.pan_x -= dPANx
 
-
-            # Vertical panning
+            # Vertical scrolling
             else:
                 dPANy = 10
-                if wheel_rotation < 0:
-                    self.pan_y += dPANy
                 if wheel_rotation > 0:
+                    self.pan_y += dPANy
+                if wheel_rotation < 0:
                     self.pan_y -= dPANy
             
             self.init = False
 
+        self.render()
 
-        # if self.pan_x < 0:
-        #     self.pan_x = 0
+    def render_text(self, text, x, y, align="left", scale=0.2):
+        """Render scalable stroke-based GLUT text."""
+        GL.glPushMatrix()
+        GL.glColor3f(0.0, 0.0, 0.0)  # black
 
-        if text:
-            self.render(text)
-        else:
-            self.Refresh()  # triggers the paint event
+        font = GLUT.GLUT_STROKE_ROMAN
 
-    def render_text(self, text, x_pos, y_pos, align=None):
-        """Handle text drawing operations."""
-        GL.glColor3f(0.0, 0.0, 0.0)  # text is black
-        font = GLUT.GLUT_BITMAP_HELVETICA_12
+        lines = text.split('\n')
+        for i, line in enumerate(lines):
+            line_y = y - i * 120 * scale  # move down for each line
+            GL.glPushMatrix()
+            GL.glTranslatef(x, line_y, 0)
+            GL.glScalef(scale, scale, scale)
 
-        if align == "center":
-            # Measure total width of the text (ignores line breaks for simplicity)
-            lines = text.split('\n')
-            max_line_width = max(sum(GLUT.glutBitmapWidth(font, ord(c)) for c in line) for line in lines)
-            x_pos = x_pos - (max_line_width / 4)
+            if align in ("center", "right"):
+                line_width = sum(GLUT.glutStrokeWidth(font, ord(c)) for c in line)
+                if align == "center":
+                    GL.glTranslatef(-line_width / 2.0, 0, 0)
+                elif align == "right":
+                    GL.glTranslatef(-line_width, 0, 0)
 
-        elif align == "right":
-            # Measure total width of the text (ignores line breaks for simplicity)
-            lines = text.split('\n')
-            max_line_width = max(sum(GLUT.glutBitmapWidth(font, ord(c)) for c in line) for line in lines)
-            x_pos = x_pos - (max_line_width / 2)
+            for char in line:
+                GLUT.glutStrokeCharacter(font, ord(char))
+            GL.glPopMatrix()
 
-        GL.glRasterPos2f(x_pos, y_pos)
-        for character in text:
-            if character == '\n':
-                y_pos = y_pos - 20
-                GL.glRasterPos2f(x_pos, y_pos)
-            else:
-                GLUT.glutBitmapCharacter(font, ord(character))
+        GL.glPopMatrix()
 
 
 
@@ -324,9 +344,9 @@ class Gui(wx.Frame):
         pan_x, pan_y = self.canvas.pan_x, self.canvas.pan_y
         width, height = self.canvas.size.width, self.canvas.size.height
         max_x, max_y = self.canvas.max_x, self.canvas.max_y
-        zoom = self.canvas.zoom
-        self.hscrollbar.SetScrollbar(int(-pan_x), int(width), int(max_x * zoom), 0)
-        self.vscrollbar.SetScrollbar(int(pan_y), int(height), int(max_y * zoom), 0)
+        zoom_x, zoom_y = self.canvas.zoom_x, self.canvas.zoom_y
+        self.hscrollbar.SetScrollbar(int(-pan_x), int(width), int(max_x * zoom_x), 0)
+        self.vscrollbar.SetScrollbar(int(pan_y), int(height), int(max_y * zoom_y), 0)
 
 app = wx.App()
 gui = Gui("Demo")
