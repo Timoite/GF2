@@ -13,7 +13,6 @@ import wx.glcanvas as wxcanvas
 from OpenGL import GL, GLUT
 
 
-
 class MyGLCanvas(wxcanvas.GLCanvas):
     """Handle all drawing operations.
 
@@ -81,12 +80,6 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GL.glLoadIdentity()
 
         self.parent.update_scrollbars()
-        
-        print("before")
-        print("size", self.size.width, self.size.height)
-        print("max", self.max_x, self.max_y)
-        print("zoom", self.zoom_x, self.zoom_y)
-        print("pan", self.pan_x, self.pan_y)
 
         if self.size.width / self.zoom_x >= 1000:
             self.max_x = self.size.width / self.zoom_x
@@ -109,12 +102,6 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             self.pan_y = 0
         elif (self.pan_y + self.size.height) / self.zoom_y > self.max_y:
             self.pan_y = (self.max_y * self.zoom_y) - self.size.height
-
-        print("after")
-        print("size", self.size.width, self.size.height)
-        print("max", self.max_x, self.max_y)
-        print("zoom", self.zoom_x, self.zoom_y)
-        print("pan", self.pan_x, self.pan_y)
 
         GL.glTranslated(0.0, self.pan_y, 0.0)
 
