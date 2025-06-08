@@ -86,22 +86,26 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GL.glMatrixMode(GL.GL_MODELVIEW)
         GL.glLoadIdentity()
 
-        center_x = size.width // 2
-        center_y = size.height // 2
-        self.render_text(text, center_x, center_y, "center")
+        self.parent.update_scrollbars()
 
-        if self.size.width / self.zoom_x >= self.max_x:
+        if self.size.width / self.zoom_x >= 1000:
             self.max_x = self.size.width / self.zoom_x
             self.parent.hscrollbar.Hide()
         else:
-            self.max_x = 2000
+            self.max_x = 1000
             self.parent.hscrollbar.Show()
-        if self.size.height / self.zoom_y >= self.max_y:
+        if self.size.height / self.zoom_y >= 600:
             self.max_y = self.size.height / self.zoom_y
             self.parent.vscrollbar.Hide()
         else:
             self.max_y = 600
             self.parent.vscrollbar.Show()
+
+        print("before")
+        print("size", self.size.width, self.size.height)
+        print("max", self.max_x, self.max_y)
+        print("zoom", self.zoom_x, self.zoom_y)
+        print("pan", self.pan_x, self.pan_y)
 
         if self.pan_x > 0:
             self.pan_x = 0
@@ -112,11 +116,21 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         elif (self.pan_y + self.size.height) / self.zoom_y > self.max_y:
             self.pan_y = (self.max_y * self.zoom_y) - self.size.height
 
-        self.parent.update_scrollbars()
+        print("after")
+        print("size", self.size.width, self.size.height)
+        print("max", self.max_x, self.max_y)
+        print("zoom", self.zoom_x, self.zoom_y)
+        print("pan", self.pan_x, self.pan_y)
+
+        GL.glTranslated(0.0, self.pan_y, 0.0)
+        GL.glScaled(self.zoom_x, self.zoom_y, 1.0)
+
+        center_x = size.width // 2
+        center_y = size.height - 200
+        self.render_text(text, center_x, center_y, "center")
 
         # Apply pan and zoom
-        GL.glTranslated(self.pan_x, self.pan_y, 0.0)
-        GL.glScaled(self.zoom_x, self.zoom_y, 1.0)
+        GL.glTranslated(self.pan_x, 0.0, 0.0)
 
         # ---- Draw zoom/pan-sensitive content here ----
         GL.glColor3f(0.0, 0.0, 1.0)  # signal trace is blue
