@@ -12,12 +12,6 @@ import wx
 import wx.glcanvas as wxcanvas
 from OpenGL import GL, GLUT
 
-from names import Names
-from devices import Devices
-from network import Network
-from monitors import Monitors
-from scanner import Scanner
-from parse import Parser
 
 
 class MyGLCanvas(wxcanvas.GLCanvas):
@@ -87,6 +81,12 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GL.glLoadIdentity()
 
         self.parent.update_scrollbars()
+        
+        print("before")
+        print("size", self.size.width, self.size.height)
+        print("max", self.max_x, self.max_y)
+        print("zoom", self.zoom_x, self.zoom_y)
+        print("pan", self.pan_x, self.pan_y)
 
         if self.size.width / self.zoom_x >= 1000:
             self.max_x = self.size.width / self.zoom_x
@@ -100,12 +100,6 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         else:
             self.max_y = 600
             self.parent.vscrollbar.Show()
-
-        print("before")
-        print("size", self.size.width, self.size.height)
-        print("max", self.max_x, self.max_y)
-        print("zoom", self.zoom_x, self.zoom_y)
-        print("pan", self.pan_x, self.pan_y)
 
         if self.pan_x > 0:
             self.pan_x = 0
@@ -123,7 +117,6 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         print("pan", self.pan_x, self.pan_y)
 
         GL.glTranslated(0.0, self.pan_y, 0.0)
-        GL.glScaled(self.zoom_x, self.zoom_y, 1.0)
 
         center_x = size.width // 2
         center_y = size.height - 200
@@ -131,6 +124,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
 
         # Apply pan and zoom
         GL.glTranslated(self.pan_x, 0.0, 0.0)
+        GL.glScaled(self.zoom_x, self.zoom_y, 1.0)
 
         # ---- Draw zoom/pan-sensitive content here ----
         GL.glColor3f(0.0, 0.0, 1.0)  # signal trace is blue
@@ -184,11 +178,11 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         if wheel_rotation != 0:
             # Zooming
             if event.ControlDown():
-                if wheel_rotation < 0:
-                    self.zoom_x *= (1.0 - (
-                        wheel_rotation / (20 * wheel_delta)))
                 if wheel_rotation > 0:
-                    self.zoom_x /= (1.0 + (
+                    self.zoom_x *= (1.0 + (
+                        wheel_rotation / (20 * wheel_delta)))
+                if wheel_rotation < 0:
+                    self.zoom_x /= (1.0 - (
                         wheel_rotation / (20 * wheel_delta)))
                 # Adjust pan so as to zoom around the mouse position
                 self.pan_x -= (self.zoom_x - old_zoom_x) * ox
@@ -197,17 +191,17 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             # Horizontal scrolling
             elif event.ShiftDown():
                 dPANx = 10
-                if wheel_rotation < 0:
-                    self.pan_x += dPANx
                 if wheel_rotation > 0:
+                    self.pan_x += dPANx
+                if wheel_rotation < 0:
                     self.pan_x -= dPANx
 
             # Vertical scrolling
             else:
                 dPANy = 10
-                if wheel_rotation > 0:
-                    self.pan_y += dPANy
                 if wheel_rotation < 0:
+                    self.pan_y += dPANy
+                if wheel_rotation > 0:
                     self.pan_y -= dPANy
             
             self.init = False
