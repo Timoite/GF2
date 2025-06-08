@@ -101,14 +101,6 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         # Apply y scrolling
         GL.glTranslated(0.0, self.pan_y, 0.0)
 
-        self.center_x = self.size.width // 2
-        self.center_y = self.size.height // 2
-        self.render_text("text", self.center_x, self.center_y, "center")
-
-        # If simulation has been run
-        if self.monitors_dictionary:
-            self.render_signal_names()
-
         # Apply x scrolling and zoom
         GL.glTranslated(self.pan_x, 0.0, 0.0)
         GL.glScaled(self.zoom_x, self.zoom_y, 1.0)
@@ -119,32 +111,48 @@ class MyGLCanvas(wxcanvas.GLCanvas):
 
         self.check_panning()
 
-        self.render_text("start", 0, self.center_y, "left")
-        self.render_text("end", self.max_x, self.center_y, "right")
-
         GL.glFlush()
         self.SwapBuffers()
 
-    def render_signal_names(self):
-        for i, item in enumerate(self.monitors_dictionary.items()):
-            sig_name = item[0][0]
-            self.render_text(sig_name, self.center_x, self.size.height - (100 * i) - 30, "center")
-
     def render_signal_traces(self):
+        DX = 15
+        DY = 30
+        LINE_HEIGHT = 3*DY
+        BORDER_Y = 1.5*DY
+        BORDER_X = DX
+
+        # Draw axes
+        for i in range(int(self.max_y)):
+            j = self.size.height - i
+            if (i+BORDER_X) % DY == 0:
+                GL.glColor3f(0.0, 0.0, 0.0)
+                GL.glBegin(GL.GL_LINE_STRIP)
+                GL.glVertex2f(0, j)
+                GL.glVertex2f(self.max_x, j)
+                GL.glEnd()
+
+        for i in range(int(self.max_x)):
+            if (i-BORDER_Y) % DY == 0:
+                GL.glColor3f(0.0, 0.0, 0.0)
+                GL.glBegin(GL.GL_LINE_STRIP)
+                GL.glVertex2f(i, 0)
+                GL.glVertex2f(i, self.max_y)
+                GL.glEnd()
+
         for i, item in enumerate(self.monitors_dictionary.items()):
             sig_list = item[1]
+            
+            y_MID = self.size.height - (LINE_HEIGHT * i) - BORDER_Y
+            y_HIGH = y_MID + DY
+            y_LOW = y_MID - DY
 
-            j = 0
-            y_HIGH = self.size.height - (100 * i) - 50
-            y_LOW = y_HIGH - 20
-            dx = 8
-            starting_x = dx / 2
-
-            GL.glColor3f(1.0, 0.0, 0.0)  # signal trace is red
+            # Draw signal
+            GL.glColor3f(0.0, 1.0, 0.0)
+            GL.glLineWidth(10)
             GL.glBegin(GL.GL_LINE_STRIP)
-            for sig in sig_list:
-                x = (j * dx) + starting_x
-                x_next = (j * dx) + starting_x + dx
+            for j, sig in enumerate(sig_list):
+                x = (j * DX) + BORDER_X
+                x_next = (j * DX) + BORDER_X + DX
                 if sig == self.devices.HIGH:
                     y = y_HIGH
                     y_next = y_HIGH
@@ -158,41 +166,15 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                     y = y_HIGH
                     y_next = y_LOW
                 if sig == self.devices.BLANK:
-                    j += 1
                     continue
                 GL.glVertex2f(x, y)
                 GL.glVertex2f(x_next, y_next)
                 j += 1
             GL.glEnd()
+            GL.glLineWidth(1)
 
-            self.signals_width = starting_x + j * dx
-
-    def render_text(self, text, x, y, align="left", scale=0.15):
-        """Render scalable stroke-based GLUT text."""
-        GL.glPushMatrix()
-        GL.glColor3f(0.0, 0.0, 0.0)  # black
-
-        font = GLUT.GLUT_STROKE_ROMAN
-
-        lines = text.split('\n')
-        for i, line in enumerate(lines):
-            line_y = y - i * 120 * scale  # move down for each line
-            GL.glPushMatrix()
-            GL.glTranslatef(x, line_y, 0)
-            GL.glScalef(scale, scale, scale)
-
-            if align in ("center", "right"):
-                line_width = sum(GLUT.glutStrokeWidth(font, ord(c)) for c in line)
-                if align == "center":
-                    GL.glTranslatef(-line_width / 2.0, 0, 0)
-                elif align == "right":
-                    GL.glTranslatef(-line_width, 0, 0)
-
-            for char in line:
-                GLUT.glutStrokeCharacter(font, ord(char))
-            GL.glPopMatrix()
-
-        GL.glPopMatrix()
+            self.signals_width = 2 * BORDER_X + j * DX
+        self.signals_height = 2 * BORDER_Y + i * LINE_HEIGHT
 
     def on_mouse(self, event):
         """Handle mouse events."""
