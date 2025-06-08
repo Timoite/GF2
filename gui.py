@@ -77,7 +77,9 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             self.init = True
         
         self.size = self.GetClientSize()
+        # self.check_panning()
         self.render()
+        self.check_panning()
 
     def on_size(self, event):
         """Handle the canvas resize event."""
@@ -92,29 +94,16 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             self.init_gl()
             self.init = True
 
+        # Clear the screen
         GL.glClear(GL.GL_COLOR_BUFFER_BIT)
         GL.glMatrixMode(GL.GL_MODELVIEW)
         GL.glLoadIdentity()
 
-        self.check_panning()
-
-        # Apply y scrolling
-        GL.glTranslated(0.0, self.pan_y, 0.0)
-
-        # Apply x scrolling and zoom
-        GL.glTranslated(self.pan_x, 0.0, 0.0)
+        # Apply pan and zoom
+        GL.glTranslated(self.pan_x, self.pan_y, 0.0)
         GL.glScaled(self.zoom_x, self.zoom_y, 1.0)
 
-        # If simulation has been run
-        if self.monitors_dictionary:
-            self.render_signal_traces()
-
-        self.check_panning()
-
-        GL.glFlush()
-        self.SwapBuffers()
-
-    def render_signal_traces(self):
+        # Posistioning constants
         DX = 15
         DY = 30
         BORDER_Y = 2*DY
@@ -135,9 +124,8 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 GL.glVertex2f(0, j)
                 GL.glVertex2f(self.max_x, j)
                 GL.glEnd()
-
         for i in range(int(self.max_x)):
-            if (i-BORDER_Y) % DX == 0:
+            if (i-BORDER_Y) % (3*DX) == 0:
                 GL.glLineWidth(1)
                 GL.glColor3f(0.4, 0.4, 0.4)
                 GL.glBegin(GL.GL_LINE_STRIP)
@@ -145,45 +133,49 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 GL.glVertex2f(i, self.max_y)
                 GL.glEnd()
 
-        colours = self.parent.generate_colors(len(self.monitors_dictionary))
+        # if sim has been run, draw trace
+        if self.monitors_dictionary:
+            colours = self.parent.generate_colors(len(self.monitors_dictionary))
+            for i, item in enumerate(self.monitors_dictionary.items()):
+                sig_list = item[1]
+                
+                y_MID = self.size.height - (LINE_HEIGHT * i) - BORDER_Y
+                y_HIGH = y_MID + DY
+                y_LOW = y_MID - DY
 
-        for i, item in enumerate(self.monitors_dictionary.items()):
-            sig_list = item[1]
-            
-            y_MID = self.size.height - (LINE_HEIGHT * i) - BORDER_Y
-            y_HIGH = y_MID + DY
-            y_LOW = y_MID - DY
+                # Draw signal
+                [r, g, b] = colours[i]
+                GL.glColor3f(r, g, b)
+                GL.glLineWidth(10)
+                GL.glBegin(GL.GL_LINE_STRIP)
+                for j, sig in enumerate(sig_list):
+                    x = (j * DX) + BORDER_X
+                    x_next = (j * DX) + BORDER_X + DX
+                    if sig == self.devices.HIGH:
+                        y = y_HIGH
+                        y_next = y_HIGH
+                    if sig == self.devices.LOW:
+                        y = y_LOW
+                        y_next = y_LOW
+                    if sig == self.devices.RISING:
+                        y = y_LOW
+                        y_next = y_HIGH
+                    if sig == self.devices.FALLING:
+                        y = y_HIGH
+                        y_next = y_LOW
+                    if sig == self.devices.BLANK:
+                        continue
+                    GL.glVertex2f(x, y)
+                    GL.glVertex2f(x_next, y_next)
+                    j += 1
+                GL.glEnd()
+                GL.glLineWidth(1)
 
-            # Draw signal
-            [r, g, b] = colours[i]
-            GL.glColor3f(r, g, b)
-            GL.glLineWidth(10)
-            GL.glBegin(GL.GL_LINE_STRIP)
-            for j, sig in enumerate(sig_list):
-                x = (j * DX) + BORDER_X
-                x_next = (j * DX) + BORDER_X + DX
-                if sig == self.devices.HIGH:
-                    y = y_HIGH
-                    y_next = y_HIGH
-                if sig == self.devices.LOW:
-                    y = y_LOW
-                    y_next = y_LOW
-                if sig == self.devices.RISING:
-                    y = y_LOW
-                    y_next = y_HIGH
-                if sig == self.devices.FALLING:
-                    y = y_HIGH
-                    y_next = y_LOW
-                if sig == self.devices.BLANK:
-                    continue
-                GL.glVertex2f(x, y)
-                GL.glVertex2f(x_next, y_next)
-                j += 1
-            GL.glEnd()
-            GL.glLineWidth(1)
+                self.signals_width = 2 * BORDER_X + j * DX
+            self.signals_height = 2 * BORDER_Y + i * LINE_HEIGHT
 
-            self.signals_width = 2 * BORDER_X + j * DX
-        self.signals_height = 2 * BORDER_Y + i * LINE_HEIGHT
+        GL.glFlush()
+        self.SwapBuffers()
 
     def on_mouse(self, event):
         """Handle mouse events."""
@@ -226,12 +218,19 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             
             self.init = False
 
-        self.render()
+        if self.pan_x > 0:
+            self.pan_x = 0
+        elif (self.size.width - self.pan_x) / self.zoom_x > self.max_x:
+            self.pan_x = self.size.width - (self.max_x * self.zoom_x)
+        if self.pan_y < 0:
+            self.pan_y = 0
+        elif (self.pan_y + self.size.height) / self.zoom_y > self.max_y:
+            self.pan_y = (self.max_y * self.zoom_y) - self.size.height
+
+        self.Refresh()
 
     def check_panning(self):
-        print(self.size.width / self.zoom_x, self.signals_width)
         if self.size.width / self.zoom_x >= self.signals_width:
-            print("hello")
             self.max_x = self.size.width / self.zoom_x
             self.parent.hscrollbar.Hide()
         else:
@@ -243,15 +242,6 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         else:
             self.max_y = self.signals_height
             self.parent.vscrollbar.Show()
-
-        if self.pan_x > 0:
-            self.pan_x = 0
-        elif (self.size.width - self.pan_x) / self.zoom_x > self.max_x:
-            self.pan_x = self.size.width - (self.max_x * self.zoom_x)
-        if self.pan_y < 0:
-            self.pan_y = 0
-        elif (self.pan_y + self.size.height) / self.zoom_y > self.max_y:
-            self.pan_y = (self.max_y * self.zoom_y) - self.size.height
 
         self.parent.Layout()
         self.parent.update_scrollbars()
