@@ -58,7 +58,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         size = self.GetClientSize()
         self.SetCurrent(self.context)
         GL.glDrawBuffer(GL.GL_BACK)
-        GL.glClearColor(1.0, 1.0, 1.0, 0.0)
+        GL.glClearColor(0.0, 0.0, 0.0, 0.0)
         GL.glViewport(0, 0, size.width, size.height)
         GL.glMatrixMode(GL.GL_PROJECTION)
         GL.glLoadIdentity()
@@ -117,27 +117,35 @@ class MyGLCanvas(wxcanvas.GLCanvas):
     def render_signal_traces(self):
         DX = 15
         DY = 30
-        LINE_HEIGHT = 3*DY
-        BORDER_Y = 1.5*DY
+        BORDER_Y = 2*DY
         BORDER_X = DX
+        LINE_HEIGHT = 2*DY + BORDER_Y
 
         # Draw axes
         for i in range(int(self.max_y)):
             j = self.size.height - i
-            if (i+BORDER_X) % DY == 0:
-                GL.glColor3f(0.0, 0.0, 0.0)
+            if i % DY == 0:
+                if i % (4*DY) == 0:
+                    GL.glLineWidth(3)
+                    GL.glColor3f(1.0, 1.0, 1.0)
+                else:
+                    GL.glLineWidth(1)
+                    GL.glColor3f(0.4, 0.4, 0.4)
                 GL.glBegin(GL.GL_LINE_STRIP)
                 GL.glVertex2f(0, j)
                 GL.glVertex2f(self.max_x, j)
                 GL.glEnd()
 
         for i in range(int(self.max_x)):
-            if (i-BORDER_Y) % DY == 0:
-                GL.glColor3f(0.0, 0.0, 0.0)
+            if (i-BORDER_Y) % DX == 0:
+                GL.glLineWidth(1)
+                GL.glColor3f(0.4, 0.4, 0.4)
                 GL.glBegin(GL.GL_LINE_STRIP)
                 GL.glVertex2f(i, 0)
                 GL.glVertex2f(i, self.max_y)
                 GL.glEnd()
+
+        colours = self.parent.generate_colors(len(self.monitors_dictionary))
 
         for i, item in enumerate(self.monitors_dictionary.items()):
             sig_list = item[1]
@@ -147,7 +155,8 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             y_LOW = y_MID - DY
 
             # Draw signal
-            GL.glColor3f(0.0, 1.0, 0.0)
+            [r, g, b] = colours[i]
+            GL.glColor3f(r, g, b)
             GL.glLineWidth(10)
             GL.glBegin(GL.GL_LINE_STRIP)
             for j, sig in enumerate(sig_list):
@@ -587,6 +596,36 @@ class Gui(wx.Frame):
         self.canvas.init = False
         self.canvas.Refresh()
         self.update_scrollbars()
+
+    def generate_colors(self, n):
+        """
+        Generate `n` distinct high-saturation RGB colors in a repeatable order.
+        Returns a list of RGB tuples with values in the range [0, 255].
+        """
+        def hsv_to_rgb(h, s, v):
+            """Convert HSV (in [0-1] range) to RGB (in [0-255])"""
+            i = int(h * 6)
+            f = (h * 6) - i
+            p = v * (1 - s)
+            q = v * (1 - f * s)
+            t = v * (1 - (1 - f) * s)
+            i = i % 6
+            if i == 0: r, g, b = v, t, p
+            elif i == 1: r, g, b = q, v, p
+            elif i == 2: r, g, b = p, v, t
+            elif i == 3: r, g, b = p, q, v
+            elif i == 4: r, g, b = t, p, v
+            elif i == 5: r, g, b = v, p, q
+            return [r, g, b]
+
+        colors = []
+        golden_ratio_conjugate = 0.61803398875  # Ensures good distribution
+        h = 0  # Initial hue
+        for i in range(n):
+            h = (h + golden_ratio_conjugate) % 1
+            rgb = hsv_to_rgb(h, 1.0, 1.0)  # Full saturation and value
+            colors.append(rgb)
+        return colors
 
     def _quit(self, event):
         """Exit the program."""
