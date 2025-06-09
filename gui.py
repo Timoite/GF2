@@ -18,26 +18,9 @@ class MyGLCanvas(wxcanvas.GLCanvas):
 
     This class contains functions for drawing onto the canvas. It
     also contains handlers for events relating to the canvas.
-
-    Parameters
-    ----------
-    parent: parent window.
-    devices: instance of the devices.Devices() class.
-    monitors: instance of the monitors.Monitors() class.
-
-    Public methods
-    --------------
-    init_gl(self): Configures the OpenGL context.
-
-    render(self, text): Handles all drawing operations.
-
-    on_paint(self, event): Handles the paint event.
-
     """
 
-    instances = {}  # Keep a record of all canvases
-
-    def __init__(self, parent, monitor_name):
+    def __init__(self, parent):
         """Initialise canvas properties and useful variables."""
         super().__init__(parent, -1,
                          attribList=[wxcanvas.WX_GL_RGBA,
@@ -46,109 +29,45 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GLUT.glutInit()
         self.init = False
         self.context = wxcanvas.GLContext(self)
-        self.monitor_name = monitor_name
         self.parent = parent
         self.monitors_dictionary = None
-        MyGLCanvas.instances[monitor_name] = self  # Keep a record of canvases
+        self.devices = None
+
+        # Initialise variables for panning
+        self.pan_x = 0
+        self.pan_y = 0
+        self.max_x = 0
+        self.max_y = 0
+        self.signals_width = 0
+        self.signals_height = 0
+        self.size = self.GetClientSize()
+        self.last_mouse_x = 0  # previous mouse x position
+        self.last_mouse_y = 0  # previous mouse y position
+        self.cycles_per_tick = 5
+
+        # Initialise variables for zooming
+        self.zoom_x = 1
+        self.zoom_y = 1
 
         # Bind events to the canvas
         self.Bind(wx.EVT_PAINT, self.on_paint)
         self.Bind(wx.EVT_SIZE, self.on_size)
+        self.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse)
 
     def init_gl(self):
         """Configure and initialise the OpenGL context."""
-        self.initial_size = self.GetClientSize()
+        size = self.GetClientSize()
         self.SetCurrent(self.context)
         GL.glDrawBuffer(GL.GL_BACK)
-        GL.glClearColor(1.0, 1.0, 1.0, 0.0)
-        GL.glViewport(0, 0, self.initial_size.width, self.initial_size.height)
+        GL.glClearColor(0.0, 0.0, 0.0, 0.0)
+        GL.glViewport(0, 0, size.width, size.height)
         GL.glMatrixMode(GL.GL_PROJECTION)
         GL.glLoadIdentity()
-        GL.glOrtho(0, self.initial_size.width, 0,
-                   self.initial_size.height, -1, 1)
+        GL.glOrtho(0, size.width, 0, size.height, -1, 1)
         GL.glMatrixMode(GL.GL_MODELVIEW)
         GL.glLoadIdentity()
-
-    def render_signal(self, monitors_dictionary, devices, cycles_completed):
-        """Render the latest simulation."""
-        self.monitors_dictionary = monitors_dictionary
-        self.devices = devices
-        self.cycles_completed = cycles_completed
-        self.render()
-
-    def render(self):
-        """Handle all drawing operations."""
-        self.SetCurrent(self.context)
-        if not self.init:
-            # Configure the viewport, modelview and projection matrices
-            self.init_gl()
-            self.init = True
-
-        # Clear everything
-        GL.glClear(GL.GL_COLOR_BUFFER_BIT)
-
-        # Try to render signal
-        try:
-            # Get values to draw
-            [device_id, output_id] = \
-                self.devices.get_signal_ids(self.monitor_name)
-            if "." in self.monitor_name:
-                device_name = self.monitor_name[:(self.monitor_name.find("."))]
-            else:
-                device_name = self.monitor_name
-            signal_list = self.monitors_dictionary[device_name,
-                                                   output_id]
-
-            # Scaling the drawing
-            i = 0
-            y_HIGH = 25
-            y_LOW = 5
-            dx = 8
-            starting_x = dx / 2
-            scalef = (self.initial_size.width - dx) \
-                / (self.cycles_completed * dx)
-            if scalef < 1:
-                GL.glScalef(scalef, 1.0, 1.0)
-                starting_x /= scalef
-
-            # Drawing
-            GL.glColor3f(1.0, 0.0, 0.0)  # signal trace is red
-            GL.glBegin(GL.GL_LINE_STRIP)
-            for signal in signal_list:
-                x = (i * dx) + starting_x
-                x_next = (i * dx) + starting_x + dx
-                if signal == self.devices.HIGH:
-                    y = y_HIGH
-                    y_next = y_HIGH
-                if signal == self.devices.LOW:
-                    y = y_LOW
-                    y_next = y_LOW
-                if signal == self.devices.RISING:
-                    y = y_LOW
-                    y_next = y_HIGH
-                if signal == self.devices.FALLING:
-                    y = y_HIGH
-                    y_next = y_LOW
-                if signal == self.devices.BLANK:
-                    i += 1
-                    continue
-                GL.glVertex2f(x, y)
-                GL.glVertex2f(x_next, y_next)
-                i += 1
-            GL.glEnd()
-
-            # Reset scaling
-            if scalef < 1:
-                GL.glScalef(1/scalef, 1.0, 1.0)
-
-        # if the sim has not been run yet
-        except AttributeError:
-            pass
-
-        """We have been drawing to the back buffer, flush the graphics pipeline
-        and swap the back buffer to the front"""
-        GL.glFlush()
-        self.SwapBuffers()
+        GL.glTranslated(self.pan_x, self.pan_y, 0.0)
+        GL.glScaled(self.zoom_x, self.zoom_x, self.zoom_x)
 
     def on_paint(self, event):
         """Handle the paint event."""
@@ -157,15 +76,177 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             # Configure the viewport, modelview and projection matrices
             self.init_gl()
             self.init = True
+        
+        self.size = self.GetClientSize()
         self.render()
 
     def on_size(self, event):
-        """Handle the size event."""
-        size = self.GetClientSize()
-        self.SetCurrent(self.context)
-        GL.glViewport(0, 0, size.width, size.height)
-        event.Skip()
+        """Handle the canvas resize event."""
+        # Forces reconfiguration of the viewport, modelview and projection
+        # matrices on the next paint event
+        self.init = False
 
+    def render(self):
+        """Handle all drawing operations."""
+        self.SetCurrent(self.context)
+        if not self.init:
+            self.init_gl()
+            self.init = True
+
+        # Clear the screen
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+        GL.glMatrixMode(GL.GL_MODELVIEW)
+        GL.glLoadIdentity()
+
+        # Apply pan and zoom
+        GL.glTranslated(self.pan_x, self.pan_y, 0.0)
+        GL.glScaled(self.zoom_x, self.zoom_y, 1.0)
+
+        # Posistioning constants
+        DX = 15
+        DY = 30
+        BORDER_Y = 2*DY
+        BORDER_X = DX
+        LINE_HEIGHT = 2*DY + BORDER_Y
+
+        # if sim has been run, adjust canvas size
+        if self.monitors_dictionary:
+            self.signals_width = 2 * BORDER_X + self.parent.cycles_completed * DX
+            self.signals_height = len(self.monitors_dictionary) * LINE_HEIGHT
+        self._check_canvas_size()
+
+        # Draw axes
+        for i in range(int(self.max_y)): # horizontal
+            j = self.size.height - i
+            if i % DY == 0:
+                if i % (4*DY) == 0:
+                    GL.glLineWidth(3)
+                    GL.glColor3f(1.0, 1.0, 1.0)
+                else:
+                    GL.glLineWidth(1)
+                    GL.glColor3f(0.4, 0.4, 0.4)
+                GL.glBegin(GL.GL_LINE_STRIP)
+                GL.glVertex2f(0, j)
+                GL.glVertex2f(self.max_x, j)
+                GL.glEnd()
+        for i in range(int(self.max_x)):
+            if (i-BORDER_Y) % (self.cycles_per_tick*DX) == 0:
+                GL.glLineWidth(1)
+                GL.glColor3f(0.4, 0.4, 0.4)
+                GL.glBegin(GL.GL_LINE_STRIP)
+                GL.glVertex2f(i, self.size.height)
+                GL.glVertex2f(i, self.size.height - self.max_y)
+                GL.glEnd()
+
+        # if sim has been run, draw trace
+        if self.monitors_dictionary:
+            colours = self.parent.generate_colours(len(self.monitors_dictionary))
+            for i, item in enumerate(self.monitors_dictionary.items()):
+                sig_list = item[1]
+                
+                y_MID = self.size.height - (LINE_HEIGHT * i) - BORDER_Y
+                y_HIGH = y_MID + DY
+                y_LOW = y_MID - DY
+
+                # Draw signal
+                [r, g, b] = colours[i]
+                GL.glColor3f(r, g, b)
+                GL.glLineWidth(10)
+                GL.glBegin(GL.GL_LINE_STRIP)
+                for j, sig in enumerate(sig_list):
+                    x = (j * DX) + BORDER_X
+                    x_next = (j * DX) + BORDER_X + DX
+                    if sig == self.devices.HIGH:
+                        y = y_HIGH
+                        y_next = y_HIGH
+                    if sig == self.devices.LOW:
+                        y = y_LOW
+                        y_next = y_LOW
+                    if sig == self.devices.RISING:
+                        y = y_LOW
+                        y_next = y_HIGH
+                    if sig == self.devices.FALLING:
+                        y = y_HIGH
+                        y_next = y_LOW
+                    if sig == self.devices.BLANK:
+                        continue
+                    GL.glVertex2f(x, y)
+                    GL.glVertex2f(x_next, y_next)
+                    j += 1
+                GL.glEnd()
+                GL.glLineWidth(1)
+
+        GL.glFlush()
+        self.SwapBuffers()
+
+    def on_mouse(self, event):
+        """Handle mouse events."""
+        # Calculate object coordinates of the mouse position
+        # size = self.GetClientSize()
+        ox = (event.GetX() - self.pan_x) / self.zoom_x
+        # oy = (size.height - event.GetY() - self.pan_y) / self.zoom
+        old_zoom_x = self.zoom_x
+        # old_zoom_y = self.zoom_y
+
+        wheel_rotation, wheel_delta = event.GetWheelRotation(), event.GetWheelDelta()
+        if wheel_rotation != 0:
+            # Zooming
+            if event.ControlDown():
+                if wheel_rotation > 0:
+                    self.zoom_x *= (1.0 + (
+                        wheel_rotation / (20 * wheel_delta)))
+                if wheel_rotation < 0:
+                    self.zoom_x /= (1.0 - (
+                        wheel_rotation / (20 * wheel_delta)))
+                # Adjust pan so as to zoom around the mouse position
+                self.pan_x -= (self.zoom_x - old_zoom_x) * ox
+                # self.pan_y -= (self.zoom_y - old_zoom_y) * oy
+
+            # Horizontal scrolling
+            elif event.ShiftDown():
+                dPANx = 10
+                if wheel_rotation > 0:
+                    self.pan_x += dPANx
+                if wheel_rotation < 0:
+                    self.pan_x -= dPANx
+
+            # Vertical scrolling
+            else:
+                dPANy = 10
+                if wheel_rotation < 0:
+                    self.pan_y += dPANy
+                if wheel_rotation > 0:
+                    self.pan_y -= dPANy
+            
+            self.init = False
+
+        if self.pan_x > 0:
+            self.pan_x = 0
+        elif (self.size.width - self.pan_x) / self.zoom_x > self.max_x:
+            self.pan_x = self.size.width - (self.max_x * self.zoom_x)
+        if self.pan_y < 0:
+            self.pan_y = 0
+        elif (self.pan_y + self.size.height) / self.zoom_y > self.max_y:
+            self.pan_y = (self.max_y * self.zoom_y) - self.size.height
+
+        self.Refresh()
+
+    def _check_canvas_size(self):
+        if self.size.width / self.zoom_x >= self.signals_width:
+            self.max_x = self.size.width / self.zoom_x
+            self.parent.hscrollbar.Hide()
+        else:
+            self.max_x = self.signals_width
+            self.parent.hscrollbar.Show()
+        if self.size.height / self.zoom_y >= self.signals_height:
+            self.max_y = self.size.height / self.zoom_y
+            self.parent.vscrollbar.Hide()
+        else:
+            self.max_y = self.signals_height
+            self.parent.vscrollbar.Show()
+
+        self.parent.Layout()
+        self.parent.update_scrollbars()
 
 class Gui(wx.Frame):
     """Configure the main window and all the widgets.
@@ -183,108 +264,162 @@ class Gui(wx.Frame):
         self.monitors = None
         self.cycles_completed = 0
 
-        # Configure sizers for layout
-        main_sizer = wx.BoxSizer(wx.VERTICAL)
-        upper_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        lower_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
-        main_sizer.Add(upper_sizer, 0, wx.EXPAND | wx.ALL, 10)
-        main_sizer.Add(lower_sizer, 0,
-                       wx.EXPAND | wx.LEFT | wx.BOTTOM | wx.RIGHT, 10)
+        self.OPEN_ID = 1000
+        self.ABOUT_ID = 1001
+        self.QUIT_ID = 1002
+        self.RUN_ID = 1003
+        self.CONTINUE_ID = 1004
+        self.PLAY_ID = 1005
+        self.PAUSE_ID = 1006
 
-        io_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
-        switches_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
-        upper_sizer.Add(io_sizer, 2, wx.EXPAND | wx.RIGHT, 10)
-        upper_sizer.Add(switches_sizer, 1, wx.EXPAND, 0)
+        # Configure the file menu
+        fileMenu = wx.Menu()
+        fileMenu.Append(self.OPEN_ID, "&Open")
+        fileMenu.Append(self.ABOUT_ID, "&About")
+        fileMenu.Append(self.QUIT_ID, "&Exit")
+        runMenu = wx.Menu()
+        runMenu.Append(self.RUN_ID, "&Run")
+        runMenu.Append(self.CONTINUE_ID, "&Continue")
+        runMenu.Append(self.PLAY_ID, "&Play")
+        runMenu.Append(self.PAUSE_ID, "&Pause")
+        menuBar = wx.MenuBar()
+        menuBar.Append(fileMenu, "&File")
+        menuBar.Append(runMenu, "&Run")
+        self.SetMenuBar(menuBar)
 
-        self.fileio_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.run_cont_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.cycles_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.total_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        io_sizer.Add(self.fileio_sizer, 0, wx.ALL | wx.CENTER, 5)
-        io_sizer.Add(self.cycles_sizer, 0, wx.TOP | wx.CENTER, 15)
-        io_sizer.Add(self.run_cont_sizer, 0, wx.ALL | wx.CENTER, 10)
-        io_sizer.Add(self.total_sizer, 0, wx.BOTTOM | wx.CENTER, 5)
+        # Configure the toolbar
+        toolbar = self.CreateToolBar()
+        myimage = wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR)
+        toolbar.AddTool(self.OPEN_ID,"Open file", myimage)
+        myimage = wx.ArtProvider.GetBitmap(wx.ART_QUIT, wx.ART_TOOLBAR)
+        toolbar.AddTool(self.QUIT_ID,"Quit", myimage)
+        toolbar.Bind(wx.EVT_TOOL, self._on_toolbar)
+        toolbar.Realize()
+        self.ToolBar = toolbar
 
-        """Configure the widgets"""
-        # File io widgets
-        open_image = wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR)
-        open_button = wx.BitmapButton(self, wx.ID_ANY, open_image)
-        self.fileio_sizer.Add(open_button, 1, wx.RIGHT, 5)
-        quit_image = wx.ArtProvider.GetBitmap(wx.ART_QUIT, wx.ART_TOOLBAR)
-        quit_button = wx.BitmapButton(self, wx.ID_ANY, quit_image)
-        self.fileio_sizer.Add(quit_button, 1, wx.LEFT, 5)
-
-        # Cycles widgets
-        text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
-        self.cycles_sizer.Add(text, 1, wx.CENTER | wx.RIGHT, 10)
-        self.spin = wx.SpinCtrl(self, wx.ID_ANY, '20', min=1, max=1000)
-        self.cycles_sizer.Add(self.spin, 0, wx.CENTER)
-
-        # Run and continue widgets
+        # ----- Configure the widgets -----
+        # Run
+        run_text1 = wx.StaticText(self, wx.ID_ANY, "Run for N cycles")
+        cycles_text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
+        self.cycles_spin = wx.SpinCtrl(self, wx.ID_ANY, '20', min=1, max=10000)
         run_button = wx.Button(self, wx.ID_ANY, "Run")
-        self.run_cont_sizer.Add(run_button, 1, wx.CENTER | wx.RIGHT, 10)
         cont_button = wx.Button(self, wx.ID_ANY, "Continue")
-        self.run_cont_sizer.Add(cont_button, 1, wx.CENTER)
 
-        # Total cycles widgets
-        text = wx.StaticText(self, wx.ID_ANY, "Total Cycles: ")
-        self.total_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 5)
-        self.total_cycles_text = \
-            wx.StaticText(self, wx.ID_ANY, str(self.cycles_completed))
-        self.total_sizer.Add(self.total_cycles_text, 0, wx.CENTER)
+        run_text2 = wx.StaticText(self, wx.ID_ANY, "Run indefinitely")
+        play_button = wx.Button(self, wx.ID_ANY, "Play")
+        pause_button = wx.Button(self, wx.ID_ANY, "Pause")
 
-        # Switches widgets
-        text = wx.StaticText(self, wx.ID_ANY, "Switches")
-        switches_sizer.Add(text, 0, wx.CENTER)
-        self.switch_rows_sizer = wx.BoxSizer(wx.VERTICAL)
-        switches_sizer.Add(self.switch_rows_sizer, 0, wx.EXPAND | wx.CENTER)
+        total_cycles_text = wx.StaticText(self, wx.ID_ANY, "Total Cycles: ")
+        self.total_cycles_text = wx.StaticText(self, wx.ID_ANY, "0")
 
-        # Monitor widgets
-        text = wx.StaticText(self, wx.ID_ANY, "Monitors")
-        lower_sizer.Add(text, 1, wx.ALL | wx.CENTER, 10)
-        # Allow scrolling
-        self.monitor_rows_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.scrolled_panel = wx.Panel(self)  # wx.ScrolledWindow(self)
-        # self.scrolled_panel.SetScrollRate(10, 10) remove scrolling again lol
-        self.scrolled_panel.SetSizer(self.monitor_rows_sizer)
-        lower_sizer.Add(self.scrolled_panel, 0, wx.EXPAND)
-        self.monitor_rows_sizer.Fit(self.scrolled_panel)
-        self.monitor_rows = {}
-        # Add monitor widgets
-        add_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        lower_sizer.Add(add_sizer, 0, wx.EXPAND)
-        add_image = wx.ArtProvider.GetBitmap(wx.ART_PLUS)
-        add_button = wx.BitmapButton(self, wx.ID_ANY, add_image)
-        add_sizer.Add(add_button, 0, wx.ALL, 5)
-        self.choice = wx.Choice(self, choices=[])
-        add_sizer.Add(self.choice, 0, wx.CENTER | wx.RIGHT, 15)
+        # Monitors
+        monitors_text = wx.StaticText(self, wx.ID_ANY, "Monitors")
+
+        # Switches
+        switches_text = wx.StaticText(self, wx.ID_ANY, "Switches")
+
+        # Scale
+        scale_text1 = wx.StaticText(self, wx.ID_ANY, "Scale")
+        scale_text2 = wx.StaticText(self, wx.ID_ANY, "Cycles per tick:")
+        self.scale_spin = wx.SpinCtrl(self, wx.ID_ANY, '5', min=1, max=1000)
+
+        # Canvas
+        self.canvas = MyGLCanvas(self)
+        self.hscrollbar = wx.ScrollBar(self, style=wx.HORIZONTAL)
+        self.vscrollbar = wx.ScrollBar(self, style=wx.VERTICAL)
+        self.hscrollbar.SetScrollbar(0, 20, 50, 15)
+        self.vscrollbar.SetScrollbar(0, 20, 50, 15)
+
+        # ----- Configure sizers ------
+        # Main layout
+        main_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        left_sizer = wx.BoxSizer(wx.VERTICAL)
+        right_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=0, vgap=0)
+
+        main_sizer.Add(left_sizer, 1, wx.ALL, 5)
+        main_sizer.Add(right_sizer, 100, wx.EXPAND | wx.ALL, 5)
+
+        # Left
+        run_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
+        run_cont_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        cycles_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        play_pause_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        total_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        monitors_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
+        switches_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
+        self.monitors_rows_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.monitors_scroll = wx.ScrolledWindow(self, style=wx.VSCROLL)
+        self.monitors_scroll.SetScrollRate(10, 10)
+        self.monitors_scroll.SetSizer(self.monitors_rows_sizer)
+        self.switches_rows_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.switches_scroll = wx.ScrolledWindow(self, style=wx.VSCROLL)
+        self.switches_scroll.SetScrollRate(10, 10)
+        self.switches_scroll.SetSizer(self.switches_rows_sizer)
+        scale_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
+        scale_h_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        left_sizer.Add(run_sizer, 1, wx.EXPAND | wx.ALL, 5)
+        left_sizer.Add(monitors_sizer, 5, wx.EXPAND | wx.ALL, 5)
+        left_sizer.Add(switches_sizer, 5, wx.EXPAND | wx.ALL, 5)
+        left_sizer.Add(scale_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        run_sizer.Add(run_text1, 0, wx.CENTER)
+        run_sizer.Add(run_cont_sizer, 0, wx.CENTER | wx.TOP, 10)
+        run_sizer.Add(cycles_sizer, 0, wx.CENTER | wx.ALL, 5)
+        run_sizer.Add(run_text2, 0, wx.CENTER | wx.TOP, 20)
+        run_sizer.Add(play_pause_sizer, 0, wx.CENTER | wx.TOP, 10)
+        run_sizer.Add(total_sizer, 0, wx.CENTER | wx.TOP, 25)
+        cycles_sizer.Add(cycles_text, 1, wx.CENTER | wx.RIGHT, 10)
+        cycles_sizer.Add(self.cycles_spin, 0, wx.CENTER)
+        run_cont_sizer.Add(run_button, 1, wx.CENTER | wx.RIGHT, 10)
+        run_cont_sizer.Add(cont_button, 1, wx.CENTER)
+        play_pause_sizer.Add(play_button, 1, wx.CENTER | wx.RIGHT, 10)
+        play_pause_sizer.Add(pause_button, 1, wx.CENTER)
+        total_sizer.Add(total_cycles_text, 0, wx.CENTER | wx.RIGHT, 5)
+        total_sizer.Add(self.total_cycles_text, 0, wx.CENTER)
+        monitors_sizer.Add(monitors_text, 0, wx.CENTER | wx.BOTTOM, 10)
+        monitors_sizer.Add(self.monitors_scroll, 2, wx.EXPAND | wx.CENTER | wx.ALL, 5)
+        self.monitors_rows_sizer.Fit(self.monitors_scroll)
+        switches_sizer.Add(switches_text, 0, wx.CENTER | wx.BOTTOM, 10)
+        switches_sizer.Add(self.switches_scroll, 1, wx.EXPAND | wx.CENTER)
+        self.switches_rows_sizer.Fit(self.switches_scroll)
+        scale_sizer.Add(scale_text1, 0, wx.CENTER)
+        scale_sizer.Add(scale_h_sizer, 0, wx.CENTER | wx.ALL, 5)
+        scale_h_sizer.Add(scale_text2, 0, wx.CENTER | wx.RIGHT, 10)
+        scale_h_sizer.Add(self.scale_spin, 0, wx.CENTER)
+
+        # Right
+        right_sizer.AddGrowableCol(0, 1)
+        right_sizer.AddGrowableRow(0, 1)
+        right_sizer.Add(self.canvas, 1, wx.EXPAND)
+        right_sizer.Add(self.vscrollbar, 0, wx.EXPAND)
+        right_sizer.Add(self.hscrollbar, 0, wx.EXPAND)
 
         # Bind events to widgets
-        open_button.Bind(wx.EVT_BUTTON, self._open_file)
-        quit_button.Bind(wx.EVT_BUTTON, self._quit)
+        self.Bind(wx.EVT_MENU, self._on_menu)
         run_button.Bind(wx.EVT_BUTTON, self._run)
-        cont_button.Bind(wx.EVT_BUTTON, self._continue_)
-        add_button.Bind(wx.EVT_BUTTON, self._create_monitor)
+        cont_button.Bind(wx.EVT_BUTTON, self._continue)
+        self.hscrollbar.Bind(wx.EVT_SCROLL, self.on_scroll)
+        self.vscrollbar.Bind(wx.EVT_SCROLL, self.on_scroll)
+        self.scale_spin.Bind(wx.EVT_SPIN, self._on_scale)
 
         # Set screen size
-        self.SetSizeHints(500, 500)
-        self.SetSize(600, 600)
+        self.SetSizeHints(720, 720)
+        self.SetSize(720, 720)
         self.SetSizer(main_sizer)
         self.SetPosition((0, 50))
 
     def _add_switch(self, switch_id, switch_state):
         """Add a switch to GUI."""
         switch_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.switch_rows_sizer.Add(switch_sizer, 0, wx.CENTER | wx.ALL, 5)
-        text = wx.StaticText(self, wx.ID_ANY, switch_id)
+        self.switches_rows_sizer.Add(switch_sizer, 0, wx.CENTER | wx.ALL, 5)
+        text = wx.StaticText(self.switches_scroll, wx.ID_ANY, switch_id)
         switch_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 5)
-        switch_radiobox = wx.RadioBox(self, wx.ID_ANY, "", choices=['0', '1'])
+        switch_radiobox = wx.RadioBox(self.switches_scroll, wx.ID_ANY, "", choices=['0', '1'])
         switch_radiobox.SetSelection(switch_state)
         switch_sizer.Add(switch_radiobox, 0, wx.CENTER)
         switch_radiobox.Bind(wx.EVT_RADIOBOX, lambda evt,
                              temp=switch_id: self._on_switch(evt, temp))
         self.Layout()
-        self._janky_linux_resizing_fix()
 
     def _on_switch(self, event, switch_id):
         """Handle event when a switch is toggled."""
@@ -292,19 +427,13 @@ class Gui(wx.Frame):
         if not self.devices.set_switch(switch_id, switch_state):
             print("Error! Invalid switch.")
 
-    def _create_monitor(self, event):
-        """Create a new monitor."""
-        # Handle the case that no file has yet been opened
-        if not self.monitors:
-            print("Error! Please open a file first.")
-            return
+    def _on_scale(self, event):
+        self.canvas.cycles_per_tick = self.scale_spin.GetValue()
+        self.update_canvas()
 
+    def _add_monitor(self, signal_name):
+        """Create a new monitor."""
         # Get which signal to add
-        signal_int = self.choice.GetSelection()
-        if signal_int == -1:  # No signals left to add
-            print("Error! Could not make monitor.")
-            return
-        signal_name = self.monitors.get_signal_names()[1][signal_int]
         [device_id, output_id] = self.devices.get_signal_ids(signal_name)
         device_id = self.names.get_name_string(device_id)
 
@@ -312,58 +441,86 @@ class Gui(wx.Frame):
         monitor_error = self.monitors.make_monitor(
             device_id, output_id, self.cycles_completed)
         if monitor_error == self.monitors.NO_ERROR:
+            self._update_monitor_list()
             print("Successfully made monitor.")
-            # Add to gui
-            self._add_monitor(signal_name)
         else:
             print("Error! Could not make monitor.")
 
-    def _add_monitor(self, signal_name):
-        """Add a monitor that already exists to GUI."""
-        # Add to GUI
-        monitor_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.monitor_rows[signal_name] = monitor_sizer
-        self.monitor_rows_sizer.Add(monitor_sizer, 0, wx.EXPAND, 0)
-        minus_image = wx.ArtProvider.GetBitmap(wx.ART_MINUS)
-        zap_button = wx.BitmapButton(
-            self.scrolled_panel, wx.ID_ANY, minus_image)
-        text = wx.StaticText(self.scrolled_panel, wx.ID_ANY, signal_name)
-        text.SetMinSize((100, -1))
-        monitor_sizer.Add(zap_button, 0, wx.CENTER | wx.ALL, 5)
-        monitor_sizer.Add(text, 0, wx.CENTER | wx.RIGHT, 10)
-        self.canvas = MyGLCanvas(self.scrolled_panel, signal_name)
-        monitor_sizer.Add(self.canvas, 1, wx.EXPAND | wx.CENTER | wx.ALL, 5)
-
-        # Redraw gui
-        self.Layout()
-
-        # Bind zap button
-        zap_button.Bind(wx.EVT_BUTTON,
-                        lambda evt, temp=signal_name:
-                        self._zap_montior(evt, temp))
-
-        # Set options on choice
-        self.choice.SetItems(self.monitors.get_signal_names()[1])
-
-        self._janky_linux_resizing_fix()
-
-    def _zap_montior(self, event, signal_name):
+    def _zap_montior(self, signal_name):
         """Remove the specified monitor."""
-        # Remove from monitors
-        [device, port] = self.devices.get_signal_ids(signal_name)
-        device = self.names.get_name_string(device)
-        if self.monitors.remove_monitor(device, port):
-            # Remove from GUI
-            MyGLCanvas.instances.pop(signal_name)
-            self.monitor_rows[signal_name].Clear(True)
-            self.monitor_rows.pop(signal_name)
-            self.Layout()
-            self._janky_linux_resizing_fix()
-            # Set options on choice
-            self.choice.SetItems(self.monitors.get_signal_names()[1])
+        # Get which signal to zap
+        [device_id, output_id] = self.devices.get_signal_ids(signal_name)
+        device_id = self.names.get_name_string(device_id)
+
+        if self.monitors.remove_monitor(device_id, output_id):
+            self._update_monitor_list()
             print("Successfully zapped monitor.")
         else:
             print("Error! Could not zap monitor.")
+
+    def _update_monitor_list(self):
+        self.monitors_rows_sizer.Clear(True)
+        [monitored, unmonitored] = self.monitors.get_signal_names()
+
+        colours = self.generate_colours(len(monitored))
+        for i, sig in enumerate(monitored):
+            r, g, b = colours[i]
+            R, G, B = int(r*255), int(g*255), int(b*255)
+            monitor_row_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            checkbox = wx.CheckBox(self.monitors_scroll, wx.ID_ANY, sig)
+            checkbox.SetValue(True)
+            checkbox.Bind(wx.EVT_CHECKBOX, self._on_checkbox)
+            line = wx.Panel(self.monitors_scroll, size=(40,5))
+            line.SetBackgroundColour((R, G, B))
+            monitor_row_sizer.Add(checkbox, 1, wx.EXPAND)
+            monitor_row_sizer.Add(line, 0, wx.CENTER | wx.RIGHT, 10)
+            self.monitors_rows_sizer.Add(monitor_row_sizer, 0, wx.CENTER | wx.EXPAND | wx.ALL, 5)
+
+        for sig in unmonitored:
+            monitor_row_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            checkbox = wx.CheckBox(self.monitors_scroll, wx.ID_ANY, sig)
+            checkbox.SetValue(False)
+            checkbox.Bind(wx.EVT_CHECKBOX, self._on_checkbox)
+            monitor_row_sizer.Add(checkbox, 1, wx.EXPAND)
+            self.monitors_rows_sizer.Add(monitor_row_sizer, 0, wx.CENTER | wx.EXPAND | wx.ALL, 5)
+
+        self.Layout()
+
+    def _on_checkbox(self, event):
+        checkbox = event.GetEventObject()
+        signal_name = checkbox.GetLabel()
+        checked = checkbox.IsChecked()
+        print(signal_name, checked)
+        if checked:
+            self._add_monitor(signal_name)
+        else:
+            self._zap_montior(signal_name)
+        self.update_canvas()
+
+    def _on_menu(self, event):
+        Id = event.GetId()
+        if Id  == self.OPEN_ID:
+            self._open_file(event)
+        elif Id == self.QUIT_ID:
+            self._quit(event)
+        elif Id == self.ABOUT_ID:
+            wx.MessageBox("Logic Simulatorinator\nCreated by Harry Weedon, Thomas Barker and Tim Tan\n2025",
+                          "About Logsim", wx.ICON_INFORMATION | wx.OK)
+        elif Id == self.RUN_ID:
+            self._run()
+        elif Id == self.CONTINUE_ID_ID:
+            self._continue()
+        elif Id == self.PLAY_ID:
+            self._run()
+        elif Id == self.PAUSE_ID:
+            self._run()
+
+    def _on_toolbar(self, event): 
+        Id = event.GetId()
+        if Id  == self.OPEN_ID:
+            self._open_file(event)
+        elif Id == self.QUIT_ID:
+            self._quit(event)
 
     def _open_file(self, event):
         """Open a file specified by the user."""
@@ -380,7 +537,6 @@ class Gui(wx.Frame):
         # Make sure gui is blank
         self.cycles_completed = 0
         self.total_cycles_text.SetLabel(str(self.cycles_completed))
-        self._clear_widgets()
 
         # Initialise instances of the four inner simulator classes
         self.names = Names()
@@ -396,33 +552,21 @@ class Gui(wx.Frame):
             print("Error! Unable to parse file.")
             return
 
-        # Add switches and monitors to gui
-        self._populate_widgets()
-
-    def _populate_widgets(self):
-        """Add required switches and monitors to the gui."""
         # Add switches
+        self.switches_rows_sizer.Clear(True)
         switch_ids = self.devices.find_devices(self.devices.SWITCH)
         for switch_id in switch_ids:
             switch = self.devices.get_device(switch_id)
             switch_state = switch.switch_state
             self._add_switch(switch_id, switch_state)
 
-        # Set options on choice to non monitored signals
-        self.choice.SetItems(self.monitors.get_signal_names()[1])
+        # Clear any existing traces
+        for monitor in self.monitors.monitors_dictionary:
+            self.monitors.monitors_dictionary[monitor] = []
+        self.canvas.monitors_dictionary = self.monitors.monitors_dictionary
 
-        # Add monitors and ensure they are cleared
-        for monitored_signal_name in self.monitors.get_signal_names()[0]:
-            self._add_monitor(monitored_signal_name)
-        for signal_list in self.monitors.monitors_dictionary:
-            self.monitors.monitors_dictionary[signal_list] = []
-
-    def _clear_widgets(self):
-        """Clear the switches and monitors from the gui."""
-        self.switch_rows_sizer.Clear(True)
-        self.monitor_rows_sizer.Clear(True)
-        MyGLCanvas.instances = {}
-        self.monitor_rows = {}
+        self._update_monitor_list()
+        self.update_canvas()
 
     def _run_network(self):
         """Run the network for the specified number of simulation cycles.
@@ -430,7 +574,7 @@ class Gui(wx.Frame):
         Return True if successful.
         """
         # Get user input
-        cycles = self.spin.GetValue()
+        cycles = self.cycles_spin.GetValue()
 
         # Run
         for _ in range(cycles):
@@ -445,9 +589,12 @@ class Gui(wx.Frame):
         self.total_cycles_text.SetLabel(str(self.cycles_completed))
 
         # Update monitor displays
-        for canvas in MyGLCanvas.instances.values():
-            canvas.render_signal(self.monitors.monitors_dictionary,
-                                 self.devices, self.cycles_completed)
+        self.canvas.monitors_dictionary = self.monitors.monitors_dictionary
+        self.canvas.devices = self.devices
+
+        self.update_canvas()
+        self.canvas.pan_x = self.canvas.size.width - (self.canvas.max_x * self.canvas.zoom_x)
+        self.update_canvas()
 
         return True
 
@@ -459,11 +606,11 @@ class Gui(wx.Frame):
             return
 
         self.cycles_completed = 0
-        self._clear_widgets()
-        self._populate_widgets()
+        for monitor in self.monitors.monitors_dictionary:
+            self.monitors.monitors_dictionary[monitor] = []
         self._run_network()
 
-    def _continue_(self, event):
+    def _continue(self, event):
         """Continue a previously run simulation."""
         # Handle the case that no file has yet been opened
         if not self.monitors:
@@ -475,25 +622,49 @@ class Gui(wx.Frame):
         else:
             self._run_network()
 
+    def on_scroll(self, event):
+        self.canvas.pan_x = -self.hscrollbar.GetThumbPosition()
+        self.canvas.pan_y = self.vscrollbar.GetThumbPosition()
+        self.update_canvas()
+
+    def update_scrollbars(self):
+        self.hscrollbar.SetScrollbar(int(-self.canvas.pan_x), int(self.canvas.size.width), int(self.canvas.max_x * self.canvas.zoom_x), 0)
+        self.vscrollbar.SetScrollbar(int(self.canvas.pan_y), int(self.canvas.size.height), int(self.canvas.max_y * self.canvas.zoom_y), 0)
+
+    def update_canvas(self):
+        self.canvas.Refresh()
+        self.canvas.Update()
+        wx.GetApp().Yield()
+        self.update_scrollbars()
+
+    def generate_colours(self, n):
+        """
+        Generate `n` distinct high-saturation RGB colors in a repeatable order.
+        Returns a list of RGB tuples with values in the range [0, 255].
+        """
+        def hsv_to_rgb(h, s, v):
+            """Convert HSV (in [0-1] range) to RGB (in [0-255])"""
+            i = int(h * 6)
+            f = (h * 6) - i
+            p = v * (1 - s)
+            q = v * (1 - f * s)
+            t = v * (1 - (1 - f) * s)
+            i = i % 6
+            if i == 0: r, g, b = v, t, p
+            elif i == 1: r, g, b = q, v, p
+            elif i == 2: r, g, b = p, v, t
+            elif i == 3: r, g, b = p, q, v
+            elif i == 4: r, g, b = t, p, v
+            elif i == 5: r, g, b = v, p, q
+            return [r, g, b]
+
+        colours = []
+        for i in range(n):
+            h = i / max(n, 1)  # Hue from 0 to 1
+            rgb = hsv_to_rgb(h, 1.0, 1.0)  # Full saturation and brightness
+            colours.append(rgb)
+        return colours
+
     def _quit(self, event):
         """Exit the program."""
         sys.exit()
-
-    def _janky_linux_resizing_fix(self):
-        inital_size = self.GetSize()
-        self.SetSizeHints(0, 0)
-        self.Fit()
-        fitted_size = self.GetSize()
-        self.SetSizeHints(fitted_size)
-        new_size = [0, 0]
-        if fitted_size[0] > inital_size[0]:
-            new_size[0] = fitted_size[0]
-        else:
-            new_size[0] = inital_size[0]
-
-        if fitted_size[1] > inital_size[1]:
-            new_size[1] = fitted_size[1]
-        else:
-            new_size[1] = inital_size[1]
-
-        self.SetSize(new_size)
