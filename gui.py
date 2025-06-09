@@ -41,9 +41,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         self.signals_width = 0
         self.signals_height = 0
         self.size = self.GetClientSize()
-        self.last_mouse_x = 0  # previous mouse x position
-        self.last_mouse_y = 0  # previous mouse y position
-        self.cycles_per_tick = 5
+        self.SCALE_HEIGHT = 30
 
         # Initialise variables for zooming
         self.zoom_x = 1
@@ -98,16 +96,18 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GL.glMatrixMode(GL.GL_MODELVIEW)
         GL.glLoadIdentity()
 
-        # Apply pan and zoom
-        GL.glTranslated(self.pan_x, self.pan_y, 0.0)
-        GL.glScaled(self.zoom_x, self.zoom_y, 1.0)
-
         # Posistioning constants
         DX = 15
         DY = 30
         BORDER_Y = 2*DY
         BORDER_X = DX
         LINE_HEIGHT = 2*DY + BORDER_Y
+        TOP = self.size.height - self.SCALE_HEIGHT
+        CYCLES_PER_TICK = max(5 * round(DY / (DX * self.zoom_x * 5)), 5)
+
+        # Apply pan and zoom
+        GL.glTranslated(self.pan_x, self.pan_y, 0.0)
+        GL.glScaled(self.zoom_x, self.zoom_y, 1.0)
 
         # If sim has been run, adjust canvas size
         if self.monitors_dictionary:
@@ -117,8 +117,16 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         self._check_canvas_size()
 
         # Draw axes
+        for i in range(int(self.max_x)):  # Vertical
+            if (i-BORDER_X) % (CYCLES_PER_TICK*DX) == 0:
+                GL.glLineWidth(1)
+                GL.glColor3f(0.4, 0.4, 0.4)
+                GL.glBegin(GL.GL_LINE_STRIP)
+                GL.glVertex2f(i, TOP)
+                GL.glVertex2f(i, TOP - self.max_y)
+                GL.glEnd()
         for i in range(int(self.max_y)):  # Horizontal
-            j = self.size.height - i
+            j = TOP - i
             if i % DY == 0:
                 if i % (4*DY) == 0:
                     GL.glLineWidth(3)
@@ -130,14 +138,6 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 GL.glVertex2f(0, j)
                 GL.glVertex2f(self.max_x, j)
                 GL.glEnd()
-        for i in range(int(self.max_x)):  # Vertical
-            if (i-BORDER_Y) % (self.cycles_per_tick*DX) == 0:
-                GL.glLineWidth(1)
-                GL.glColor3f(0.4, 0.4, 0.4)
-                GL.glBegin(GL.GL_LINE_STRIP)
-                GL.glVertex2f(i, self.size.height)
-                GL.glVertex2f(i, self.size.height - self.max_y)
-                GL.glEnd()
 
         # If sim has been run, draw trace
         if self.monitors_dictionary:
@@ -146,7 +146,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             for i, item in enumerate(self.monitors_dictionary.items()):
                 sig_list = item[1]
 
-                y_MID = self.size.height - (LINE_HEIGHT * i) - BORDER_Y
+                y_MID = TOP - (LINE_HEIGHT * i) - BORDER_Y
                 y_HIGH = y_MID + DY
                 y_LOW = y_MID - DY
 
@@ -178,8 +178,44 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 GL.glEnd()
                 GL.glLineWidth(1)
 
+        # Undo vertical scroll
+        GL.glTranslated(0.0, -self.pan_y, 0.0)
+
+        # Make blank box at the top
+        GL.glColor3f(0.0, 0.0, 0.0)
+        GL.glBegin(GL.GL_QUADS)
+        GL.glVertex2f(0, self.size.height)
+        GL.glVertex2f(0, self.size.height - self.SCALE_HEIGHT)
+        GL.glVertex2f(self.max_x, self.size.height - self.SCALE_HEIGHT)
+        GL.glVertex2f(self.max_x, self.size.height)
+        GL.glEnd()
+        GL.glLineWidth(8)
+        GL.glColor3f(1.0, 1.0, 1.0)
+        GL.glBegin(GL.GL_LINE_STRIP)
+        GL.glVertex2f(0, self.size.height - self.SCALE_HEIGHT)
+        GL.glVertex2f(self.max_x, self.size.height - self.SCALE_HEIGHT)
+        GL.glEnd()
+
+        # Add x axis
+        for i in range(int(self.max_x)):
+            if (i-BORDER_X) % (CYCLES_PER_TICK*DX) == 0:
+                num = CYCLES_PER_TICK*(i-BORDER_X) // (CYCLES_PER_TICK*DX)
+                if num >= 0:
+                    self.render_text(str(num), i, self.size.height - 18)
+
         GL.glFlush()
         self.SwapBuffers()
+
+    def render_text(self, text, x_pos, y_pos):
+        """Handle text drawing operations."""
+        GL.glColor3f(1.0, 1.0, 1.0)  # text is white
+        font = GLUT.GLUT_BITMAP_TIMES_ROMAN_24
+        line_width = sum(GLUT.glutBitmapWidth(font, ord(c)) for c in text)
+        x_pos -= int(line_width / (4 * self.zoom_x))
+        x_pos = max(x_pos, 0)
+        GL.glRasterPos2f(x_pos, y_pos)
+        for character in text:
+            GLUT.glutBitmapCharacter(font, ord(character))
 
     def _on_mouse(self, event):
         """Handle mouse events."""
@@ -204,33 +240,35 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 self.pan_x -= (self.zoom_x - old_zoom_x) * ox
                 # self.pan_y -= (self.zoom_y - old_zoom_y) * oy
 
-            # Vertical scrolling
-            elif event.ShiftDown():
-                dPANy = 10
-                if wheel_rotation < 0:
-                    self.pan_y += dPANy
-                if wheel_rotation > 0:
-                    self.pan_y -= dPANy
-
             # Horizontal scrolling
-            else:
+            elif event.ShiftDown():
                 dPANx = 20
                 if wheel_rotation > 0:
                     self.pan_x += dPANx
                 if wheel_rotation < 0:
                     self.pan_x -= dPANx
 
+            # Vertical scrolling
+            else:
+                dPANy = 10
+                if wheel_rotation < 0:
+                    self.pan_y += dPANy
+                if wheel_rotation > 0:
+                    self.pan_y -= dPANy
+
             self.init = False
 
         # Make sure panning within bounds of screen
-        if self.pan_x > 0:
-            self.pan_x = 0
-        elif (self.size.width - self.pan_x) / self.zoom_x > self.max_x:
-            self.pan_x = self.size.width - (self.max_x * self.zoom_x)
-        if self.pan_y < 0:
-            self.pan_y = 0
-        elif (self.pan_y + self.size.height) / self.zoom_y > self.max_y:
-            self.pan_y = (self.max_y * self.zoom_y) - self.size.height
+        self.pan_x = min(0, self.pan_x)
+        self.pan_x = max(self.size.width
+                         - (self.max_x * self.zoom_x), self.pan_x)
+        self.pan_y = max(0, self.pan_y)
+        self.pan_y = min((self.max_y * self.zoom_y)
+                         - self.size.height + self.SCALE_HEIGHT, self.pan_y)
+
+        # Limit zoom
+        self.zoom_x = max(0.01, self.zoom_x)
+        self.zoom_x = min(10, self.zoom_x)
 
         self.Refresh()
 
@@ -255,7 +293,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             int(-self.pan_x), int(self.size.width),
             int(self.max_x * self.zoom_x), 0)
         self.parent.vscrollbar.SetScrollbar(
-            int(self.pan_y), int(self.size.height),
+            int(self.pan_y), int(self.size.height - self.SCALE_HEIGHT),
             int(self.max_y * self.zoom_y), 0)
 
 
@@ -266,9 +304,10 @@ class Gui(wx.Frame):
     enables the user to change the circuit properties and run simulations.
     """
 
-    def __init__(self, title):
+    def __init__(self, title, path):
         """Initialise static widgets and layout."""
         super().__init__(parent=None, title=title, size=(400, 400))
+        self.path = None
         self.names = None
         self.devices = None
         self.network = None
@@ -435,6 +474,8 @@ class Gui(wx.Frame):
         self.SetSizer(main_sizer)
         self.SetPosition((0, 50))
 
+        self._open_file(None, path)
+
     def _add_switch(self, switch_id, switch_state):
         """Add a switch to GUI."""
         switch_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -567,16 +608,18 @@ class Gui(wx.Frame):
         elif Id == self.QUIT_ID:
             self._quit(event)
 
-    def _open_file(self, event):
-        """Open a file specified by the user."""
-        # Opens file selector
-        openFileDialog = wx.FileDialog(
-            self, "Open txt file", "", "",
-            wildcard="TXT files (*.txt)|*.txt",
-            style=wx.FD_OPEN+wx.FD_FILE_MUST_EXIST)
-        if openFileDialog.ShowModal() == wx.ID_CANCEL:
-            return
-        self.path = openFileDialog.GetPath()
+    def _open_file(self, event, path=None):
+        """Load a file into the simulator."""
+        if not path:
+            # Opens file selector
+            openFileDialog = wx.FileDialog(
+                self, "Open txt file", "", "",
+                wildcard="TXT files (*.txt)|*.txt",
+                style=wx.FD_OPEN+wx.FD_FILE_MUST_EXIST)
+            if openFileDialog.ShowModal() == wx.ID_CANCEL:
+                return
+            path = openFileDialog.GetPath()
+        self.path = path
         print("File chosen =", self.path)
 
         # Make sure gui is blank
@@ -667,16 +710,17 @@ class Gui(wx.Frame):
                 self._run_network(cycles=cycles)
                 self.has_started = True
         elif Id == self.CLEAR_ID:
-            if self.has_started:
+            if self.has_started and not self.timer.IsRunning():
                 for monitor in self.monitors.monitors_dictionary:
                     self.monitors.monitors_dictionary[monitor] = []
                 self.canvas.monitors_dictionary =\
                     self.monitors.monitors_dictionary
                 self.cycles_completed = 0
+                self.canvas.pan_x = self.canvas.pan_y = 0
                 self._update_canvas()
                 self.has_started = False
             else:
-                print("Error! Nothing to clear")
+                print("Error! Unable to clear")
         elif Id == self.PLAY_ID:
             if not self.timer.IsRunning():
                 self.timer.Start(int(

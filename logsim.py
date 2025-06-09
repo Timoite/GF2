@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Parse command line options and arguments for the Logic Simulator.
 
 This script parses options and arguments specified on the command line, and
@@ -59,9 +60,12 @@ def main(arg_list):
                 userint.command_interface()
 
     if not options:  # no option given, use the graphical user interface
-        """Launch the simulatorinator."""
+        if len(arguments) == 1:
+            [path] = arguments
+        else:
+            path = None
         app = wx.App()
-        gui = Gui("Logic Simulatorinator")
+        gui = Gui("Logic Simulatorinator", path)
         gui.Show(True)
         app.MainLoop()
 
