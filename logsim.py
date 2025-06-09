@@ -12,6 +12,7 @@ Graphical user interface: logsim.py <file path>
 """
 import getopt
 import sys
+import os
 
 import wx
 
@@ -22,21 +23,6 @@ from monitors import Monitors
 from scanner import Scanner
 from parse import Parser
 from userint import UserInterface
-
-import gettext
-import locale
-import os
-
-def setup_i18n():
-    """Set up internationalization for the application."""
-    lang = os.environ.get('LANG', 'en_US.UTF-8')
-    if 'zh' in lang:
-        translation = gettext.translation('logsim', 'locale', languages=['zh_CN'])
-        translation.install()
-    else:
-        gettext.install('logsim', 'locale')
-
-setup_i18n()
 
 from gui import Gui
 
@@ -79,8 +65,24 @@ def main(arg_list):
             [path] = arguments
         else:
             path = None
+
         app = wx.App()
-        gui = Gui(_("Logic Simulatorinator"), path)
+        
+        lang = os.environ.get('LANG', 'en_US.UTF-8') # Check the environment variable LANG
+        system_lang = wx.Locale.GetSystemLanguage() # Get the system language
+        print(f"System language: {system_lang}, Environment LANG: {lang}")
+        
+        if ('zh' in lang or 
+            system_lang in [wx.LANGUAGE_CHINESE, 
+                            wx.LANGUAGE_CHINESE_SIMPLIFIED]):
+            locale = wx.Locale(wx.LANGUAGE_CHINESE_SIMPLIFIED)
+        else:
+            locale = wx.Locale(wx.LANGUAGE_ENGLISH)
+
+        locale.AddCatalogLookupPathPrefix('locale')
+        locale.AddCatalog('logsim')
+
+        gui = Gui(wx.GetTranslation("Logic Simulatorinator"), path)
         gui.Show(True)
         app.MainLoop()
 
