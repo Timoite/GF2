@@ -334,17 +334,17 @@ class Gui(wx.Frame):
 
         # Configure the file menu
         fileMenu = wx.Menu()
-        fileMenu.Append(self.OPEN_ID, "&Open")
-        fileMenu.Append(self.ABOUT_ID, "&About")
-        fileMenu.Append(self.QUIT_ID, "&Exit")
+        fileMenu.Append(self.OPEN_ID, _(u"&Open"))
+        fileMenu.Append(self.ABOUT_ID, _(u"&About"))
+        fileMenu.Append(self.QUIT_ID, _(u"&Exit"))
         runMenu = wx.Menu()
         runMenu.Append(self.RUN_ID, "&Run / Continue")
         runMenu.Append(self.CLEAR_ID, "&Clear")
         runMenu.Append(self.PLAY_ID, "&Play")
         runMenu.Append(self.PAUSE_ID, "&Pause")
         menuBar = wx.MenuBar()
-        menuBar.Append(fileMenu, "&File")
-        menuBar.Append(runMenu, "&Run")
+        menuBar.Append(fileMenu, _(u"&File"))
+        menuBar.Append(runMenu, _(u"&Run"))
         self.SetMenuBar(menuBar)
 
         # Configure the toolbar
@@ -376,7 +376,7 @@ class Gui(wx.Frame):
         monitors_text = wx.StaticText(self, wx.ID_ANY, "Monitors")
 
         # Switches
-        switches_text = wx.StaticText(self, wx.ID_ANY, "Switches")
+        switches_text = wx.StaticText(self, wx.ID_ANY, _(u"Switches"))
 
         # Canvas
         self.canvas = MyGLCanvas(self)
@@ -484,7 +484,7 @@ class Gui(wx.Frame):
         """Handle event when a switch is toggled."""
         switch_state = event.GetSelection()
         if not self.devices.set_switch(switch_id, switch_state):
-            print("Error! Invalid switch.")
+            print(_(u"Error! Invalid switch."))
 
     def _add_monitor(self, signal_name):
         """Create a new monitor."""
