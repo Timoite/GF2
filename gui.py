@@ -50,11 +50,11 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         self.zoom_y = 1
 
         # Bind events to the canvas
-        self.Bind(wx.EVT_PAINT, self.on_paint)
-        self.Bind(wx.EVT_SIZE, self.on_size)
-        self.Bind(wx.EVT_MOUSE_EVENTS, self.on_mouse)
+        self.Bind(wx.EVT_PAINT, self._on_paint)
+        self.Bind(wx.EVT_SIZE, self._on_size)
+        self.Bind(wx.EVT_MOUSE_EVENTS, self._on_mouse)
 
-    def init_gl(self):
+    def _init_gl(self):
         """Configure and initialise the OpenGL context."""
         size = self.GetClientSize()
         self.SetCurrent(self.context)
@@ -69,28 +69,28 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GL.glTranslated(self.pan_x, self.pan_y, 0.0)
         GL.glScaled(self.zoom_x, self.zoom_x, self.zoom_x)
 
-    def on_paint(self, event):
+    def _on_paint(self, event):
         """Handle the paint event."""
         self.SetCurrent(self.context)
         if not self.init:
             # Configure the viewport, modelview and projection matrices
-            self.init_gl()
+            self._init_gl()
             self.init = True
 
         self.size = self.GetClientSize()
-        self.render()
+        self._render()
 
-    def on_size(self, event):
+    def _on_size(self, event):
         """Handle the canvas resize event."""
         # Forces reconfiguration of the viewport, modelview and projection
         # matrices on the next paint event
         self.init = False
 
-    def render(self):
+    def _render(self):
         """Handle all drawing operations."""
         self.SetCurrent(self.context)
         if not self.init:
-            self.init_gl()
+            self._init_gl()
             self.init = True
 
         # Clear the screen
@@ -181,7 +181,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GL.glFlush()
         self.SwapBuffers()
 
-    def on_mouse(self, event):
+    def _on_mouse(self, event):
         """Handle mouse events."""
         # Calculate object coordinates of the mouse position
         ox = (event.GetX() - self.pan_x) / self.zoom_x
