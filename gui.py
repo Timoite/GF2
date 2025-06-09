@@ -77,9 +77,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             self.init = True
         
         self.size = self.GetClientSize()
-        # self.check_panning()
         self.render()
-        self.check_panning()
 
     def on_size(self, event):
         """Handle the canvas resize event."""
@@ -110,8 +108,14 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         BORDER_X = DX
         LINE_HEIGHT = 2*DY + BORDER_Y
 
+        # if sim has been run, adjust canvas size
+        if self.monitors_dictionary:
+            self.signals_width = 2 * BORDER_X + self.parent.cycles_completed * DX
+            self.signals_height = len(self.monitors_dictionary) * LINE_HEIGHT
+        self._check_canvas_size()
+
         # Draw axes
-        for i in range(int(self.max_y)):
+        for i in range(int(self.max_y)): # horizontal
             j = self.size.height - i
             if i % DY == 0:
                 if i % (4*DY) == 0:
@@ -129,8 +133,8 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 GL.glLineWidth(1)
                 GL.glColor3f(0.4, 0.4, 0.4)
                 GL.glBegin(GL.GL_LINE_STRIP)
-                GL.glVertex2f(i, 0)
-                GL.glVertex2f(i, self.max_y)
+                GL.glVertex2f(i, self.size.height)
+                GL.glVertex2f(i, self.size.height - self.max_y)
                 GL.glEnd()
 
         # if sim has been run, draw trace
@@ -170,9 +174,6 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                     j += 1
                 GL.glEnd()
                 GL.glLineWidth(1)
-
-                self.signals_width = 2 * BORDER_X + j * DX
-            self.signals_height = 2 * BORDER_Y + i * LINE_HEIGHT
 
         GL.glFlush()
         self.SwapBuffers()
@@ -229,7 +230,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
 
         self.Refresh()
 
-    def check_panning(self):
+    def _check_canvas_size(self):
         if self.size.width / self.zoom_x >= self.signals_width:
             self.max_x = self.size.width / self.zoom_x
             self.parent.hscrollbar.Hide()
@@ -514,6 +515,10 @@ class Gui(wx.Frame):
             switch_state = switch.switch_state
             self._add_switch(switch_id, switch_state)
 
+        # Clear any existing traces
+        for monitor in self.monitors.monitors_dictionary:
+            self.monitors.monitors_dictionary[monitor] = []
+
         self._set_choice_options()
         self.update_canvas
 
@@ -541,6 +546,10 @@ class Gui(wx.Frame):
         self.canvas.monitors_dictionary = self.monitors.monitors_dictionary
         self.canvas.devices = self.devices
 
+        self.update_canvas()
+        self.canvas.pan_x = self.canvas.size.width - (self.canvas.max_x * self.canvas.zoom_x)
+        self.update_canvas()
+
         return True
 
     def _run(self, event):
@@ -554,7 +563,6 @@ class Gui(wx.Frame):
         for monitor in self.monitors.monitors_dictionary:
             self.monitors.monitors_dictionary[monitor] = []
         self._run_network()
-        self.update_canvas()
 
     def _continue(self, event):
         """Continue a previously run simulation."""
@@ -567,24 +575,20 @@ class Gui(wx.Frame):
             print("Error! Nothing to continue. Please run first.")
         else:
             self._run_network()
-            self.update_canvas()
 
     def on_scroll(self, event):
-            self.canvas.pan_x = -self.hscrollbar.GetThumbPosition()
-            self.canvas.pan_y = self.vscrollbar.GetThumbPosition()
-            self.update_canvas()
+        self.canvas.pan_x = -self.hscrollbar.GetThumbPosition()
+        self.canvas.pan_y = self.vscrollbar.GetThumbPosition()
+        self.update_canvas()
 
     def update_scrollbars(self):
-        pan_x, pan_y = self.canvas.pan_x, self.canvas.pan_y
-        width, height = self.canvas.size.width, self.canvas.size.height
-        max_x, max_y = self.canvas.max_x, self.canvas.max_y
-        zoom_x, zoom_y = self.canvas.zoom_x, self.canvas.zoom_y
-        self.hscrollbar.SetScrollbar(int(-pan_x), int(width), int(max_x * zoom_x), 0)
-        self.vscrollbar.SetScrollbar(int(pan_y), int(height), int(max_y * zoom_y), 0)
+        self.hscrollbar.SetScrollbar(int(-self.canvas.pan_x), int(self.canvas.size.width), int(self.canvas.max_x * self.canvas.zoom_x), 0)
+        self.vscrollbar.SetScrollbar(int(self.canvas.pan_y), int(self.canvas.size.height), int(self.canvas.max_y * self.canvas.zoom_y), 0)
 
     def update_canvas(self):
-        self.canvas.init = False
         self.canvas.Refresh()
+        self.canvas.Update()
+        wx.GetApp().Yield()
         self.update_scrollbars()
 
     def generate_colors(self, n):
@@ -608,14 +612,12 @@ class Gui(wx.Frame):
             elif i == 5: r, g, b = v, p, q
             return [r, g, b]
 
-        colors = []
-        golden_ratio_conjugate = 0.61803398875  # Ensures good distribution
-        h = 0  # Initial hue
+        colours = []
         for i in range(n):
-            h = (h + golden_ratio_conjugate) % 1
-            rgb = hsv_to_rgb(h, 1.0, 1.0)  # Full saturation and value
-            colors.append(rgb)
-        return colors
+            h = i / max(n, 1)  # Hue from 0 to 1
+            rgb = hsv_to_rgb(h, 1.0, 1.0)  # Full saturation and brightness
+            colours.append(rgb)
+        return colours
 
     def _quit(self, event):
         """Exit the program."""
