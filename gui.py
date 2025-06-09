@@ -701,6 +701,8 @@ class Gui(wx.Frame):
                 self.canvas.monitors_dictionary =\
                     self.monitors.monitors_dictionary
                 self.cycles_completed = 0
+                self.total_cycles_text.SetLabel(str(self.cycles_completed))
+                self.Layout()
                 self.canvas.pan_x = self.canvas.pan_y = 0
                 self.canvas.Refresh()
                 self.has_started = False
