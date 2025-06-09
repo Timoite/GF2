@@ -204,21 +204,21 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 self.pan_x -= (self.zoom_x - old_zoom_x) * ox
                 # self.pan_y -= (self.zoom_y - old_zoom_y) * oy
 
-            # Horizontal scrolling
-            elif event.ShiftDown():
-                dPANx = 10
-                if wheel_rotation > 0:
-                    self.pan_x += dPANx
-                if wheel_rotation < 0:
-                    self.pan_x -= dPANx
-
             # Vertical scrolling
-            else:
+            elif event.ShiftDown():
                 dPANy = 10
                 if wheel_rotation < 0:
                     self.pan_y += dPANy
                 if wheel_rotation > 0:
                     self.pan_y -= dPANy
+
+            # Horizontal scrolling
+            else:
+                dPANx = 20
+                if wheel_rotation > 0:
+                    self.pan_x += dPANx
+                if wheel_rotation < 0:
+                    self.pan_x -= dPANx
 
             self.init = False
 
@@ -250,7 +250,13 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             self.parent.vscrollbar.Show()
 
         self.parent.Layout()
-        self.parent.update_scrollbars()
+
+        self.parent.hscrollbar.SetScrollbar(
+            int(-self.pan_x), int(self.size.width),
+            int(self.max_x * self.zoom_x), 0)
+        self.parent.vscrollbar.SetScrollbar(
+            int(self.pan_y), int(self.size.height),
+            int(self.max_y * self.zoom_y), 0)
 
 
 class Gui(wx.Frame):
@@ -273,9 +279,16 @@ class Gui(wx.Frame):
         self.ABOUT_ID = 1001
         self.QUIT_ID = 1002
         self.RUN_ID = 1003
-        self.CONTINUE_ID = 1004
+        self.CLEAR_ID = 1004
         self.PLAY_ID = 1005
         self.PAUSE_ID = 1006
+        self.DEF_SPEED = 50
+        self.SPEEDS = [0.1, 0.2, 0.5, 1, 2, 5, 10]
+
+        self.has_started = False
+
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self._run_network)
 
         # Configure the file menu
         fileMenu = wx.Menu()
@@ -283,8 +296,8 @@ class Gui(wx.Frame):
         fileMenu.Append(self.ABOUT_ID, "&About")
         fileMenu.Append(self.QUIT_ID, "&Exit")
         runMenu = wx.Menu()
-        runMenu.Append(self.RUN_ID, "&Run")
-        runMenu.Append(self.CONTINUE_ID, "&Continue")
+        runMenu.Append(self.RUN_ID, "&Run / Continue")
+        runMenu.Append(self.CLEAR_ID, "&Clear")
         runMenu.Append(self.PLAY_ID, "&Play")
         runMenu.Append(self.PAUSE_ID, "&Pause")
         menuBar = wx.MenuBar()
@@ -298,22 +311,22 @@ class Gui(wx.Frame):
         toolbar.AddTool(self.OPEN_ID, "Open file", myimage)
         myimage = wx.ArtProvider.GetBitmap(wx.ART_QUIT, wx.ART_TOOLBAR)
         toolbar.AddTool(self.QUIT_ID, "Quit", myimage)
-        toolbar.Bind(wx.EVT_TOOL, self._on_toolbar)
         toolbar.Realize()
         self.ToolBar = toolbar
 
         # ----- Configure the widgets -----
         # Run
-        run_text1 = wx.StaticText(self, wx.ID_ANY, "Run for N cycles")
+        run_text1 = wx.StaticText(self, wx.ID_ANY, "Run for N Cycles")
         cycles_text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
         self.cycles_spin = wx.SpinCtrl(self, wx.ID_ANY, '20', min=1, max=10000)
-        run_button = wx.Button(self, wx.ID_ANY, "Run")
-        continue_button = wx.Button(self, wx.ID_ANY, "Continue")
-
-        run_text2 = wx.StaticText(self, wx.ID_ANY, "Run indefinitely")
-        play_button = wx.Button(self, wx.ID_ANY, "Play")
-        pause_button = wx.Button(self, wx.ID_ANY, "Pause")
-
+        self.run_button = wx.Button(self, self.RUN_ID, "Run")
+        continue_button = wx.Button(self, self.CLEAR_ID, "Clear")
+        run_text2 = wx.StaticText(self, wx.ID_ANY, "Run Indefinitely")
+        play_button = wx.Button(self, self.PLAY_ID, "Play")
+        pause_button = wx.Button(self, self.PAUSE_ID, "Pause")
+        self.speed_slider = wx.Slider(self, wx.ID_ANY, 3, 0, 6, size=(100, -1))
+        text = "Speed: "+str(self.SPEEDS[self.speed_slider.GetValue()])+"x"
+        self.speed_slider_text = wx.StaticText(self, wx.ID_ANY, text)
         total_cycles_text = wx.StaticText(self, wx.ID_ANY, "Total Cycles: ")
         self.total_cycles_text = wx.StaticText(self, wx.ID_ANY, "0")
 
@@ -325,7 +338,7 @@ class Gui(wx.Frame):
 
         # Scale
         scale_text1 = wx.StaticText(self, wx.ID_ANY, "Scale")
-        scale_text2 = wx.StaticText(self, wx.ID_ANY, "Cycles per tick:")
+        scale_text2 = wx.StaticText(self, wx.ID_ANY, "Cycles per Gridline:")
         self.scale_spin = wx.SpinCtrl(self, wx.ID_ANY, '5', min=1, max=1000)
 
         # Canvas
@@ -349,6 +362,7 @@ class Gui(wx.Frame):
         run_cont_sizer = wx.BoxSizer(wx.HORIZONTAL)
         cycles_sizer = wx.BoxSizer(wx.HORIZONTAL)
         play_pause_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        speed_sizer = wx.BoxSizer(wx.HORIZONTAL)
         total_sizer = wx.BoxSizer(wx.HORIZONTAL)
         monitors_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
         switches_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
@@ -372,13 +386,16 @@ class Gui(wx.Frame):
         run_sizer.Add(cycles_sizer, 0, wx.CENTER | wx.ALL, 5)
         run_sizer.Add(run_text2, 0, wx.CENTER | wx.TOP, 20)
         run_sizer.Add(play_pause_sizer, 0, wx.CENTER | wx.TOP, 10)
+        run_sizer.Add(speed_sizer, 0, wx.CENTER | wx.TOP, 10)
         run_sizer.Add(total_sizer, 0, wx.CENTER | wx.TOP, 25)
         cycles_sizer.Add(cycles_text, 1, wx.CENTER | wx.RIGHT, 10)
         cycles_sizer.Add(self.cycles_spin, 0, wx.CENTER)
-        run_cont_sizer.Add(run_button, 1, wx.CENTER | wx.RIGHT, 10)
+        run_cont_sizer.Add(self.run_button, 1, wx.CENTER | wx.RIGHT, 10)
         run_cont_sizer.Add(continue_button, 1, wx.CENTER)
         play_pause_sizer.Add(play_button, 1, wx.CENTER | wx.RIGHT, 10)
         play_pause_sizer.Add(pause_button, 1, wx.CENTER)
+        speed_sizer.Add(self.speed_slider_text, 1, wx.CENTER | wx.RIGHT, 10)
+        speed_sizer.Add(self.speed_slider)
         total_sizer.Add(total_cycles_text, 0, wx.CENTER | wx.RIGHT, 5)
         total_sizer.Add(self.total_cycles_text, 0, wx.CENTER)
         monitors_sizer.Add(monitors_text, 0, wx.CENTER | wx.BOTTOM, 10)
@@ -402,10 +419,12 @@ class Gui(wx.Frame):
 
         # Bind events to widgets
         self.Bind(wx.EVT_MENU, self._on_menu)
-        run_button.Bind(wx.EVT_BUTTON, self._run)
-        continue_button.Bind(wx.EVT_BUTTON, self._continue)
-        play_button.Bind(wx.EVT_BUTTON, self._play)
-        pause_button.Bind(wx.EVT_BUTTON, self._pause)
+        toolbar.Bind(wx.EVT_TOOL, self._on_toolbar)
+        self.run_button.Bind(wx.EVT_BUTTON, self._on_button)
+        continue_button.Bind(wx.EVT_BUTTON, self._on_button)
+        play_button.Bind(wx.EVT_BUTTON, self._on_button)
+        pause_button.Bind(wx.EVT_BUTTON, self._on_button)
+        self.speed_slider.Bind(wx.EVT_SLIDER, self._on_slider)
         self.hscrollbar.Bind(wx.EVT_SCROLL, self.on_scroll)
         self.vscrollbar.Bind(wx.EVT_SCROLL, self.on_scroll)
         self.scale_spin.Bind(wx.EVT_SPIN, self._on_scale)
@@ -516,6 +535,14 @@ class Gui(wx.Frame):
             self._zap_montior(signal_name)
         self.update_canvas()
 
+    def _on_slider(self, event):
+        """Handle slider events."""
+        text = "Speed: "+str(self.SPEEDS[self.speed_slider.GetValue()])+"x"
+        self.speed_slider_text.SetLabel(text)
+        if self.timer.IsRunning():
+            self.timer.Stop()
+            self.timer.Start(int(self.DEF_SPEED / self.SPEEDS[self.speed_slider.GetValue()]))
+
     def _on_menu(self, event):
         """Handle menu events."""
         Id = event.GetId()
@@ -528,14 +555,8 @@ class Gui(wx.Frame):
                           Created by Harry Weedon, \
                           Thomas Barker and Tim Tan\n2025",
                           "About Logsim", wx.ICON_INFORMATION | wx.OK)
-        elif Id == self.RUN_ID:
-            self._run()
-        elif Id == self.CONTINUE_ID_ID:
-            self._continue()
-        elif Id == self.PLAY_ID:
-            self._run()
-        elif Id == self.PAUSE_ID:
-            self._run()
+        else:
+            self._on_button(event)
 
     def _on_toolbar(self, event):
         """Handle toolbar events."""
@@ -590,6 +611,7 @@ class Gui(wx.Frame):
 
         self._update_monitor_list()
         self.update_canvas()
+        self.has_started = False
 
     def _run_network(self, event = None, cycles = 1):
         """Run the network for the specified number of simulation cycles.
@@ -621,55 +643,52 @@ class Gui(wx.Frame):
 
         return True
 
-    def _run(self, event):
-        """Run the simulation from scratch."""
+    def _on_button(self, event):
         # Handle the case that no file has yet been opened
         if not self.monitors:
             print("Error! Please open a file first")
             return
+        
+        if event.GetId() in [self.RUN_ID, self.CLEAR_ID, self.PLAY_ID, self.PAUSE_ID]:
+            Id = event.GetId()
+        else:
+            Id = event.GetEventObject().GetId()
 
-        self.cycles_completed = 0
-        for monitor in self.monitors.monitors_dictionary:
-            self.monitors.monitors_dictionary[monitor] = []
+        if Id == self.RUN_ID:
+            if self.timer.IsRunning():
+                print("Error! Already running simulation")
+            else:
+                if not self.has_started:
+                    self.cycles_completed = 0
+                cycles = self.cycles_spin.GetValue()
+                self._run_network(cycles = cycles)
+                self.has_started = True
+        elif Id == self.CLEAR_ID:
+            if self.has_started:
+                for monitor in self.monitors.monitors_dictionary:
+                    self.monitors.monitors_dictionary[monitor] = []
+                self.canvas.monitors_dictionary = self.monitors.monitors_dictionary
+                self.cycles_completed = 0
+                self.update_canvas()
+                self.has_started = False
+            else:
+                print("Error! Nothing to clear")
+        elif Id == self.PLAY_ID:
+            if not self.timer.IsRunning():
+                self.timer.Start(int(self.DEF_SPEED / self.SPEEDS[self.speed_slider.GetValue()]))
+                self.has_started = True
+            else:
+                print("Error! Simulation is already running")
+        elif Id == self.PAUSE_ID:
+            if self.timer.IsRunning():
+                self.timer.Stop()
+            else:
+                print("Error! Simulation is not running")
 
-        cycles = self.cycles_spin.GetValue()
-
-        self._run_network(cycles = cycles)
-
-    def _continue(self, event):
-        """Continue a previously run simulation."""
-        # Handle the case that no file has yet been opened
-        if not self.monitors:
-            print("Error! Please open a file first")
-            return
-
-        if self.cycles_completed == 0:
-            print("Error! Nothing to continue. Please run first.")
-            return
-
-        cycles = self.cycles_spin.GetValue()
-
-        self._run_network(cycles = cycles)
-
-    def _play(self, event):
-        """Run the simulation indefinitely."""
-        # Handle the case that no file has yet been opened
-        if not self.monitors:
-            print("Error! Please open a file first")
-            return
-
-        self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self._run_network)
-        self.timer.Start(100)
-
-    def _pause(self, event):
-        """Stop an indefinitely running simulation."""
-        # Handle the case that no file has yet been opened
-        if not self.monitors:
-            print("Error! Please open a file first")
-            return
-
-        self.timer.Stop()
+        if self.has_started:
+            self.run_button.SetLabel("Continue")
+        else:
+            self.run_button.SetLabel("Run")
 
     def on_scroll(self, event):
         """Handle canvas repositioning on scroll."""
@@ -677,21 +696,11 @@ class Gui(wx.Frame):
         self.canvas.pan_y = self.vscrollbar.GetThumbPosition()
         self.update_canvas()
 
-    def update_scrollbars(self):
-        """Update the scrollbars if panning through another method."""
-        self.hscrollbar.SetScrollbar(
-            int(-self.canvas.pan_x), int(self.canvas.size.width),
-            int(self.canvas.max_x * self.canvas.zoom_x), 0)
-        self.vscrollbar.SetScrollbar(
-            int(self.canvas.pan_y), int(self.canvas.size.height),
-            int(self.canvas.max_y * self.canvas.zoom_y), 0)
-
     def update_canvas(self):
         """Force the canvas to update."""
         self.canvas.Refresh()
         self.canvas.Update()
         wx.GetApp().Yield()
-        self.update_scrollbars()
 
     def generate_colours(self, n):
         """Generate n unique colours."""
