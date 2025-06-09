@@ -111,7 +111,7 @@ class Parser:
                       "or that the parser has recieved a symbol not "
                       "found in its alphabet (acceptable characters are "
                       "alphanumeric characters, '>', '_', '-', ',', "
-                      "'#', '=' and '/'.)"
+                      "'#', '=' and '/'.")
             elif next_symbol in ["DEVICES", "CONNECTIONS", "MONITORS", "END"]:
                 print("Error in line:")
                 print(current_line)
