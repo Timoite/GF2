@@ -1,4 +1,4 @@
-'''Test the scanner module (WIP)'''
+'''Test the scanner module'''
 import pytest
 from scanner import Scanner, Symbol
 from names import Names
@@ -47,6 +47,7 @@ def test_keywords(new_scanner):
     while i < 13:
         symbol = scanner.get_symbol()
         symbol_ids.append(symbol.id)
+        print(symbol_ids)
         symbol = scanner.get_symbol()
         i += 1
     assert symbol_ids == [scanner.DEVICES_ID, scanner.CONNECTIONS_ID,
