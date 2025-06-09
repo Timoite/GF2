@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-09 10:48+0100\n"
+"POT-Creation-Date: 2025-06-09 22:32+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,105 +17,150 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: gui.py:271
+#: gui.py:337
 msgid "&Open"
 msgstr ""
 
-#: gui.py:272
+#: gui.py:338
 msgid "&About"
 msgstr ""
 
-#: gui.py:273
+#: gui.py:339
 msgid "&Exit"
 msgstr ""
 
-#: gui.py:275 gui.py:281
-msgid "&Run"
+#: gui.py:341
+msgid "&Run / Continue"
 msgstr ""
 
-#: gui.py:276
-msgid "&Continue"
+#: gui.py:342
+msgid "&Clear"
 msgstr ""
 
-#: gui.py:277
+#: gui.py:343
 msgid "&Play"
 msgstr ""
 
-#: gui.py:278
+#: gui.py:344
 msgid "&Pause"
 msgstr ""
 
-#: gui.py:280
+#: gui.py:346
 msgid "&File"
 msgstr ""
 
-#: gui.py:296
-msgid "Run for N cycles:"
+#: gui.py:347
+msgid "&Run"
 msgstr ""
 
-#: gui.py:300
+#: gui.py:361
+msgid "Run for N Cycles"
+msgstr ""
+
+#: gui.py:362
 msgid "Cycles:"
 msgstr ""
 
-#: gui.py:302
+#: gui.py:364 gui.py:728
 msgid "Run"
 msgstr ""
 
-#: gui.py:303
-msgid "Continue"
+#: gui.py:365
+msgid "Clear"
 msgstr ""
 
-#: gui.py:304
+#: gui.py:366
+msgid "Run Indefinitely"
+msgstr ""
+
+#: gui.py:367
+msgid "Play"
+msgstr ""
+
+#: gui.py:368
+msgid "Pause"
+msgstr ""
+
+#: gui.py:370 gui.py:566
+msgid "Speed: "
+msgstr ""
+
+#: gui.py:372
 msgid "Total Cycles: "
 msgstr ""
 
-#: gui.py:305
-msgid "0"
-msgstr ""
-
-#: gui.py:308
+#: gui.py:376
 msgid "Monitors"
 msgstr ""
 
-#: gui.py:311
-msgid "Add monitor:"
-msgstr ""
-
-#: gui.py:313
-msgid "Zap monitor:"
-msgstr ""
-
-#: gui.py:317
+#: gui.py:379
 msgid "Switches"
 msgstr ""
 
-#: gui.py:407
+#: gui.py:487
 msgid "Error! Invalid switch."
 msgstr ""
 
-#: gui.py:437
-msgid "- Select -"
+#: gui.py:500
+msgid "Successfully made monitor."
 msgstr ""
 
-#: gui.py:469
+#: gui.py:502
+msgid "Error! Could not make monitor."
+msgstr ""
+
+#: gui.py:512
+msgid "Successfully zapped monitor."
+msgstr ""
+
+#: gui.py:514
+msgid "Error! Could not zap monitor."
+msgstr ""
+
+#: gui.py:581
 msgid ""
 "Logic Simulatorinator\n"
-"Created by Harry Weedon, Thomas Barker and Tim Tan\n"
+"                          Created by Harry Weedon,                           "
+"Thomas Barker and Tim Tan\n"
 "2025"
 msgstr ""
 
-#: gui.py:470
-msgid "About Logsim"
-msgstr ""
-
-#: gui.py:483
+#: gui.py:601
 msgid "Open txt file"
 msgstr ""
 
-#: gui.py:484
+#: gui.py:602
 msgid "TXT files (*.txt)|*.txt"
 msgstr ""
 
-#: gui.py:489
+#: gui.py:608
 msgid "File chosen ="
+msgstr ""
+
+#: gui.py:625
+msgid "Error! Unable to parse file."
+msgstr ""
+
+#: gui.py:678
+msgid "Error! Please open a file first"
+msgstr ""
+
+#: gui.py:690 gui.py:718
+msgid "Error! Already running simulation"
+msgstr ""
+
+#: gui.py:710
+msgid "Error! Unable to clear"
+msgstr ""
+
+#: gui.py:723
+msgid "Error! Not running simulation"
+msgstr ""
+
+#: gui.py:726
+msgid "Continue"
+msgstr ""
+
+#: logsim.py:83
+msgid "Logic Simulatorinator"
 msgstr ""

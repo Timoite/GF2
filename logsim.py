@@ -80,7 +80,7 @@ def main(arg_list):
         else:
             path = None
         app = wx.App()
-        gui = Gui("Logic Simulatorinator", path)
+        gui = Gui(_("Logic Simulatorinator"), path)
         gui.Show(True)
         app.MainLoop()
 

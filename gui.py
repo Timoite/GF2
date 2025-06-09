@@ -338,10 +338,10 @@ class Gui(wx.Frame):
         fileMenu.Append(self.ABOUT_ID, _(u"&About"))
         fileMenu.Append(self.QUIT_ID, _(u"&Exit"))
         runMenu = wx.Menu()
-        runMenu.Append(self.RUN_ID, "&Run / Continue")
-        runMenu.Append(self.CLEAR_ID, "&Clear")
-        runMenu.Append(self.PLAY_ID, "&Play")
-        runMenu.Append(self.PAUSE_ID, "&Pause")
+        runMenu.Append(self.RUN_ID, _(u"&Run / Continue"))
+        runMenu.Append(self.CLEAR_ID, _(u"&Clear"))
+        runMenu.Append(self.PLAY_ID, _(u"&Play"))
+        runMenu.Append(self.PAUSE_ID, _(u"&Pause"))
         menuBar = wx.MenuBar()
         menuBar.Append(fileMenu, _(u"&File"))
         menuBar.Append(runMenu, _(u"&Run"))
@@ -358,22 +358,22 @@ class Gui(wx.Frame):
 
         # ----- Configure the widgets -----
         # Run
-        run_text1 = wx.StaticText(self, wx.ID_ANY, "Run for N Cycles")
-        cycles_text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
+        run_text1 = wx.StaticText(self, wx.ID_ANY, _(u"Run for N Cycles"))
+        cycles_text = wx.StaticText(self, wx.ID_ANY, _(u"Cycles:"))
         self.cycles_spin = wx.SpinCtrl(self, wx.ID_ANY, '20', min=1, max=10000)
-        self.run_button = wx.Button(self, self.RUN_ID, "Run")
-        continue_button = wx.Button(self, self.CLEAR_ID, "Clear")
-        run_text2 = wx.StaticText(self, wx.ID_ANY, "Run Indefinitely")
-        play_button = wx.Button(self, self.PLAY_ID, "Play")
-        pause_button = wx.Button(self, self.PAUSE_ID, "Pause")
+        self.run_button = wx.Button(self, self.RUN_ID, _(u"Run"))
+        continue_button = wx.Button(self, self.CLEAR_ID, _(u"Clear"))
+        run_text2 = wx.StaticText(self, wx.ID_ANY, _(u"Run Indefinitely"))
+        play_button = wx.Button(self, self.PLAY_ID, _(u"Play"))
+        pause_button = wx.Button(self, self.PAUSE_ID, _(u"Pause"))
         self.speed_slider = wx.Slider(self, wx.ID_ANY, 3, 0, 6, size=(100, -1))
-        text = "Speed: "+str(self.SPEEDS[self.speed_slider.GetValue()])+"x"
+        text = _(u"Speed: ")+str(self.SPEEDS[self.speed_slider.GetValue()])+"x"
         self.speed_slider_text = wx.StaticText(self, wx.ID_ANY, text)
-        total_cycles_text = wx.StaticText(self, wx.ID_ANY, "Total Cycles: ")
+        total_cycles_text = wx.StaticText(self, wx.ID_ANY, _(u"Total Cycles: "))
         self.total_cycles_text = wx.StaticText(self, wx.ID_ANY, "0")
 
         # Monitors
-        monitors_text = wx.StaticText(self, wx.ID_ANY, "Monitors")
+        monitors_text = wx.StaticText(self, wx.ID_ANY, _(u"Monitors"))
 
         # Switches
         switches_text = wx.StaticText(self, wx.ID_ANY, _(u"Switches"))
@@ -497,9 +497,9 @@ class Gui(wx.Frame):
             device_id, output_id, self.cycles_completed)
         if monitor_error == self.monitors.NO_ERROR:
             self._update_monitor_list()
-            print("Successfully made monitor.")
+            print(_(u"Successfully made monitor."))
         else:
-            print("Error! Could not make monitor.")
+            print(_(u"Error! Could not make monitor."))
 
     def _zap_montior(self, signal_name):
         """Remove the specified monitor."""
@@ -509,9 +509,9 @@ class Gui(wx.Frame):
 
         if self.monitors.remove_monitor(device_id, output_id):
             self._update_monitor_list()
-            print("Successfully zapped monitor.")
+            print(_(u"Successfully zapped monitor."))
         else:
-            print("Error! Could not zap monitor.")
+            print(_(u"Error! Could not zap monitor."))
 
     def _update_monitor_list(self):
         """Update the monitor selection list."""
@@ -563,7 +563,7 @@ class Gui(wx.Frame):
 
     def _on_slider(self, event):
         """Handle slider events."""
-        text = "Speed: "+str(self.SPEEDS[self.speed_slider.GetValue()])+"x"
+        text = _(u"Speed: ")+str(self.SPEEDS[self.speed_slider.GetValue()])+"x"
         self.speed_slider_text.SetLabel(text)
         if self.timer.IsRunning():
             self.timer.Stop()
@@ -578,10 +578,10 @@ class Gui(wx.Frame):
         elif Id == self.QUIT_ID:
             self._quit(event)
         elif Id == self.ABOUT_ID:
-            wx.MessageBox("Logic Simulatorinator\n\
+            wx.MessageBox(_(u"Logic Simulatorinator\n\
                           Created by Harry Weedon, \
                           Thomas Barker and Tim Tan\n2025",
-                          "About Logsim", wx.ICON_INFORMATION | wx.OK)
+                          "About Logsim"), wx.ICON_INFORMATION | wx.OK)
         else:
             self._on_run(event)
 
@@ -598,14 +598,14 @@ class Gui(wx.Frame):
         if not path:
             # Opens file selector
             openFileDialog = wx.FileDialog(
-                self, "Open txt file", "", "",
-                wildcard="TXT files (*.txt)|*.txt",
+                self, _(u"Open txt file"), "", "",
+                wildcard=_(u"TXT files (*.txt)|*.txt"),
                 style=wx.FD_OPEN+wx.FD_FILE_MUST_EXIST)
             if openFileDialog.ShowModal() == wx.ID_CANCEL:
                 return
             path = openFileDialog.GetPath()
         self.path = path
-        print("File chosen =", self.path)
+        print(_(u"File chosen ="), self.path)
 
         # Make sure gui is blank
         self.cycles_completed = 0
@@ -622,7 +622,7 @@ class Gui(wx.Frame):
         parser = Parser(self.names,
                         self.devices, self.network, self.monitors, scanner)
         if not parser.parse_network():
-            print("Error! Unable to parse file.")
+            print(_(u"Error! Unable to parse file."))
             return
 
         # Add switches
@@ -675,7 +675,7 @@ class Gui(wx.Frame):
         """Handle run/continue/play/pause operations."""
         # Handle the case that no file has yet been opened
         if not self.monitors:
-            print("Error! Please open a file first")
+            print(_(u"Error! Please open a file first"))
             return
 
         # Get correct ID
@@ -687,7 +687,7 @@ class Gui(wx.Frame):
 
         if Id == self.RUN_ID:
             if self.timer.IsRunning():
-                print("Error! Already running simulation")
+                print(_(u"Error! Already running simulation"))
             else:
                 if not self.has_started:
                     self.cycles_completed = 0
@@ -707,7 +707,7 @@ class Gui(wx.Frame):
                 self.canvas.Refresh()
                 self.has_started = False
             else:
-                print("Error! Unable to clear")
+                print(_(u"Error! Unable to clear"))
         elif Id == self.PLAY_ID:
             if not self.timer.IsRunning():
                 self.timer.Start(int(
@@ -715,17 +715,17 @@ class Gui(wx.Frame):
                     / self.SPEEDS[self.speed_slider.GetValue()]))
                 self.has_started = True
             else:
-                print("Error! Already running simulation")
+                print(_(u"Error! Already running simulation"))
         elif Id == self.PAUSE_ID:
             if self.timer.IsRunning():
                 self.timer.Stop()
             else:
-                print("Error! Not running simulation")
+                print(_(u"Error! Not running simulation"))
 
         if self.has_started:
-            self.run_button.SetLabel("Continue")
+            self.run_button.SetLabel(_(u"Continue"))
         else:
-            self.run_button.SetLabel("Run")
+            self.run_button.SetLabel(_(u"Run"))
 
     def _on_scroll(self, event):
         """Handle canvas repositioning on scroll."""

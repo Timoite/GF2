@@ -1,117 +1,164 @@
-# FIRST AUTHOR <ht467@cam.ac.uk>, 2025.
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025 Logic Simulatorinator COPYRIGHT HOLDER
+# This file is distributed under the same license as the Logic Simulatorinator package.
+# Tim Tan <ht467@cam.ac.uk>, 2025.
+#
+#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: NA\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-06-09 10:48+0100\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: CHINESE <LL@li.org>\n"
+"POT-Creation-Date: 2025-06-09 22:32+0100\n"
+"PO-Revision-Date: 2025-06-09\n"
+"Last-Translator: Tim Tan <ht467@cam.ac.uk>\n"
+"Language-Team: TEAM8\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: gui.py:271
+#: gui.py:337
 msgid "&Open"
 msgstr "打开(&O)"
 
-#: gui.py:272
+#: gui.py:338
 msgid "&About"
 msgstr "关于(&A)"
 
-#: gui.py:273
+#: gui.py:339
 msgid "&Exit"
 msgstr "退出(&E)"
 
-#: gui.py:275 gui.py:281
-msgid "&Run"
-msgstr "运行(&R)"
+#: gui.py:341
+msgid "&Run / Continue"
+msgstr "运行/继续(&R)"
 
-#: gui.py:276
-msgid "&Continue"
-msgstr "继续(&C)"
+#: gui.py:342
+msgid "&Clear"
+msgstr "清除(&C)"
 
-#: gui.py:277
+#: gui.py:343
 msgid "&Play"
 msgstr "播放(&P)"
 
-#: gui.py:278
+#: gui.py:344
 msgid "&Pause"
 msgstr "暂停(&U)"
 
-#: gui.py:280
+#: gui.py:346
 msgid "&File"
 msgstr "文件(&F)"
 
-#: gui.py:296
-msgid "Run for N cycles:"
-msgstr "运行N个周期："
+#: gui.py:347
+msgid "&Run"
+msgstr "运行(&R)"
 
-#: gui.py:300
+#: gui.py:361
+msgid "Run for N Cycles"
+msgstr "运行N个周期"
+
+#: gui.py:362
 msgid "Cycles:"
 msgstr "周期："
 
-#: gui.py:302
+#: gui.py:364 gui.py:728
 msgid "Run"
 msgstr "运行"
 
-#: gui.py:303
-msgid "Continue"
-msgstr "继续"
+#: gui.py:365
+msgid "Clear"
+msgstr "清除"
 
-#: gui.py:304
+#: gui.py:366
+msgid "Run Indefinitely"
+msgstr "无限运行"
+
+#: gui.py:367
+msgid "Play"
+msgstr "播放"
+
+#: gui.py:368
+msgid "Pause"
+msgstr "暂停"
+
+#: gui.py:370 gui.py:566
+msgid "Speed: "
+msgstr "速度："
+
+#: gui.py:372
 msgid "Total Cycles: "
-msgstr "总周期数："
+msgstr "总周期："
 
-#: gui.py:305
-msgid "0"
-msgstr "0"
-
-#: gui.py:308
+#: gui.py:376
 msgid "Monitors"
 msgstr "监视器"
 
-#: gui.py:311
-msgid "Add monitor:"
-msgstr "添加监视器："
-
-#: gui.py:313
-msgid "Zap monitor:"
-msgstr "移除监视器："
-
-#: gui.py:317
+#: gui.py:379
 msgid "Switches"
 msgstr "开关"
 
-#: gui.py:407
+#: gui.py:487
 msgid "Error! Invalid switch."
-msgstr "错误！无效的开关。"
+msgstr "错误！无效开关。"
 
-#: gui.py:437
-msgid "- Select -"
-msgstr "- 选择 -"
+#: gui.py:500
+msgid "Successfully made monitor."
+msgstr "成功创建监视器。"
 
-#: gui.py:469
-msgid "Logic Simulatorinator\nCreated by Harry Weedon, Thomas Barker and Tim Tan\n2025"
-msgstr "逻辑模拟器\n作者：Harry Weedon, Thomas Barker 和 Tim Tan\n2025"
+#: gui.py:502
+msgid "Error! Could not make monitor."
+msgstr "错误！无法创建监视器。"
 
-#: gui.py:470
-msgid "About Logsim"
-msgstr "关于Logsim"
+#: gui.py:512
+msgid "Successfully zapped monitor."
+msgstr "成功移除监视器。"
 
-#: gui.py:483
+#: gui.py:514
+msgid "Error! Could not zap monitor."
+msgstr "错误！无法移除监视器。"
+
+#: gui.py:581
+msgid "\nLogic Simulatorinator\n                          Created by Harry Weedon,                           "
+"Thomas Barker and Tim Tan\n"
+"2025"
+msgstr "\n逻辑模拟大师\n                          作者：Harry Weedon，Thomas Barker 和 Tim Tan\n2025"
+
+#: gui.py:601
 msgid "Open txt file"
 msgstr "打开txt文件"
 
-#: gui.py:484
+#: gui.py:602
 msgid "TXT files (*.txt)|*.txt"
 msgstr "TXT文件 (*.txt)|*.txt"
 
-#: gui.py:489
+#: gui.py:608
 msgid "File chosen ="
 msgstr "已选择文件 ="
 
-#: logsim.py:79
+#: gui.py:625
+msgid "Error! Unable to parse file."
+msgstr "错误！无法解析文件。"
+
+#: gui.py:678
+msgid "Error! Please open a file first"
+msgstr "错误！请先打开文件"
+
+#: gui.py:690 gui.py:718
+msgid "Error! Already running simulation"
+msgstr "错误！仿真已在运行"
+
+#: gui.py:710
+msgid "Error! Unable to clear"
+msgstr "错误！无法清除"
+
+#: gui.py:723
+msgid "Error! Not running simulation"
+msgstr "错误！仿真未在运行"
+
+#: gui.py:726
+msgid "Continue"
+msgstr "继续"
+
+#: logsim.py:83
 msgid "Logic Simulatorinator"
-msgstr "逻辑模拟终结者"
+msgstr "逻辑模拟器大师"
