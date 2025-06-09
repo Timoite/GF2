@@ -308,7 +308,7 @@ class Gui(wx.Frame):
         cycles_text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
         self.cycles_spin = wx.SpinCtrl(self, wx.ID_ANY, '20', min=1, max=10000)
         run_button = wx.Button(self, wx.ID_ANY, "Run")
-        cont_button = wx.Button(self, wx.ID_ANY, "Continue")
+        continue_button = wx.Button(self, wx.ID_ANY, "Continue")
 
         run_text2 = wx.StaticText(self, wx.ID_ANY, "Run indefinitely")
         play_button = wx.Button(self, wx.ID_ANY, "Play")
@@ -376,7 +376,7 @@ class Gui(wx.Frame):
         cycles_sizer.Add(cycles_text, 1, wx.CENTER | wx.RIGHT, 10)
         cycles_sizer.Add(self.cycles_spin, 0, wx.CENTER)
         run_cont_sizer.Add(run_button, 1, wx.CENTER | wx.RIGHT, 10)
-        run_cont_sizer.Add(cont_button, 1, wx.CENTER)
+        run_cont_sizer.Add(continue_button, 1, wx.CENTER)
         play_pause_sizer.Add(play_button, 1, wx.CENTER | wx.RIGHT, 10)
         play_pause_sizer.Add(pause_button, 1, wx.CENTER)
         total_sizer.Add(total_cycles_text, 0, wx.CENTER | wx.RIGHT, 5)
@@ -403,7 +403,9 @@ class Gui(wx.Frame):
         # Bind events to widgets
         self.Bind(wx.EVT_MENU, self._on_menu)
         run_button.Bind(wx.EVT_BUTTON, self._run)
-        cont_button.Bind(wx.EVT_BUTTON, self._continue)
+        continue_button.Bind(wx.EVT_BUTTON, self._continue)
+        play_button.Bind(wx.EVT_BUTTON, self._play)
+        pause_button.Bind(wx.EVT_BUTTON, self._pause)
         self.hscrollbar.Bind(wx.EVT_SCROLL, self.on_scroll)
         self.vscrollbar.Bind(wx.EVT_SCROLL, self.on_scroll)
         self.scale_spin.Bind(wx.EVT_SPIN, self._on_scale)
@@ -589,13 +591,11 @@ class Gui(wx.Frame):
         self._update_monitor_list()
         self.update_canvas()
 
-    def _run_network(self):
+    def _run_network(self, event = None, cycles = 1):
         """Run the network for the specified number of simulation cycles.
 
         Return True if successful.
         """
-        # Get user input
-        cycles = self.cycles_spin.GetValue()
 
         # Run
         for _ in range(cycles):
@@ -631,7 +631,10 @@ class Gui(wx.Frame):
         self.cycles_completed = 0
         for monitor in self.monitors.monitors_dictionary:
             self.monitors.monitors_dictionary[monitor] = []
-        self._run_network()
+
+        cycles = self.cycles_spin.GetValue()
+
+        self._run_network(cycles = cycles)
 
     def _continue(self, event):
         """Continue a previously run simulation."""
@@ -642,8 +645,31 @@ class Gui(wx.Frame):
 
         if self.cycles_completed == 0:
             print("Error! Nothing to continue. Please run first.")
-        else:
-            self._run_network()
+            return
+
+        cycles = self.cycles_spin.GetValue()
+
+        self._run_network(cycles = cycles)
+
+    def _play(self, event):
+        """Run the simulation indefinitely."""
+        # Handle the case that no file has yet been opened
+        if not self.monitors:
+            print("Error! Please open a file first")
+            return
+
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self._run_network)
+        self.timer.Start(100)
+
+    def _pause(self, event):
+        """Stop an indefinitely running simulation."""
+        # Handle the case that no file has yet been opened
+        if not self.monitors:
+            print("Error! Please open a file first")
+            return
+
+        self.timer.Stop()
 
     def on_scroll(self, event):
         """Handle canvas repositioning on scroll."""
