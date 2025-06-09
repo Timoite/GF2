@@ -420,13 +420,13 @@ class Gui(wx.Frame):
         # Bind events to widgets
         self.Bind(wx.EVT_MENU, self._on_menu)
         toolbar.Bind(wx.EVT_TOOL, self._on_toolbar)
-        self.run_button.Bind(wx.EVT_BUTTON, self._on_button)
-        continue_button.Bind(wx.EVT_BUTTON, self._on_button)
-        play_button.Bind(wx.EVT_BUTTON, self._on_button)
-        pause_button.Bind(wx.EVT_BUTTON, self._on_button)
+        self.run_button.Bind(wx.EVT_BUTTON, self._on_run)
+        continue_button.Bind(wx.EVT_BUTTON, self._on_run)
+        play_button.Bind(wx.EVT_BUTTON, self._on_run)
+        pause_button.Bind(wx.EVT_BUTTON, self._on_run)
         self.speed_slider.Bind(wx.EVT_SLIDER, self._on_slider)
-        self.hscrollbar.Bind(wx.EVT_SCROLL, self.on_scroll)
-        self.vscrollbar.Bind(wx.EVT_SCROLL, self.on_scroll)
+        self.hscrollbar.Bind(wx.EVT_SCROLL, self._on_scroll)
+        self.vscrollbar.Bind(wx.EVT_SCROLL, self._on_scroll)
         self.scale_spin.Bind(wx.EVT_SPIN, self._on_scale)
 
         # Set screen size
@@ -458,7 +458,7 @@ class Gui(wx.Frame):
     def _on_scale(self, event):
         """Handle resizing of grid ticks."""
         self.canvas.cycles_per_tick = self.scale_spin.GetValue()
-        self.update_canvas()
+        self._update_canvas()
 
     def _add_monitor(self, signal_name):
         """Create a new monitor."""
@@ -533,7 +533,7 @@ class Gui(wx.Frame):
             self._add_monitor(signal_name)
         else:
             self._zap_montior(signal_name)
-        self.update_canvas()
+        self._update_canvas()
 
     def _on_slider(self, event):
         """Handle slider events."""
@@ -541,7 +541,8 @@ class Gui(wx.Frame):
         self.speed_slider_text.SetLabel(text)
         if self.timer.IsRunning():
             self.timer.Stop()
-            self.timer.Start(int(self.DEF_SPEED / self.SPEEDS[self.speed_slider.GetValue()]))
+            self.timer.Start(int(
+                self.DEF_SPEED / self.SPEEDS[self.speed_slider.GetValue()]))
 
     def _on_menu(self, event):
         """Handle menu events."""
@@ -556,7 +557,7 @@ class Gui(wx.Frame):
                           Thomas Barker and Tim Tan\n2025",
                           "About Logsim", wx.ICON_INFORMATION | wx.OK)
         else:
-            self._on_button(event)
+            self._on_run(event)
 
     def _on_toolbar(self, event):
         """Handle toolbar events."""
@@ -610,15 +611,14 @@ class Gui(wx.Frame):
         self.canvas.monitors_dictionary = self.monitors.monitors_dictionary
 
         self._update_monitor_list()
-        self.update_canvas()
+        self._update_canvas()
         self.has_started = False
 
-    def _run_network(self, event = None, cycles = 1):
+    def _run_network(self, event=None, cycles=1):
         """Run the network for the specified number of simulation cycles.
 
         Return True if successful.
         """
-
         # Run
         for _ in range(cycles):
             if self.network.execute_network():
@@ -636,20 +636,23 @@ class Gui(wx.Frame):
         self.canvas.devices = self.devices
 
         # Scroll canvas all the way to the right
-        self.update_canvas()
+        self._update_canvas()
         self.canvas.pan_x = self.canvas.size.width\
             - (self.canvas.max_x * self.canvas.zoom_x)
-        self.update_canvas()
+        self._update_canvas()
 
         return True
 
-    def _on_button(self, event):
+    def _on_run(self, event):
+        """Handle run/continue/play/pause operations."""
         # Handle the case that no file has yet been opened
         if not self.monitors:
             print("Error! Please open a file first")
             return
-        
-        if event.GetId() in [self.RUN_ID, self.CLEAR_ID, self.PLAY_ID, self.PAUSE_ID]:
+
+        # Get correct ID
+        if event.GetId() in [
+                self.RUN_ID, self.CLEAR_ID, self.PLAY_ID, self.PAUSE_ID]:
             Id = event.GetId()
         else:
             Id = event.GetEventObject().GetId()
@@ -661,21 +664,24 @@ class Gui(wx.Frame):
                 if not self.has_started:
                     self.cycles_completed = 0
                 cycles = self.cycles_spin.GetValue()
-                self._run_network(cycles = cycles)
+                self._run_network(cycles=cycles)
                 self.has_started = True
         elif Id == self.CLEAR_ID:
             if self.has_started:
                 for monitor in self.monitors.monitors_dictionary:
                     self.monitors.monitors_dictionary[monitor] = []
-                self.canvas.monitors_dictionary = self.monitors.monitors_dictionary
+                self.canvas.monitors_dictionary =\
+                    self.monitors.monitors_dictionary
                 self.cycles_completed = 0
-                self.update_canvas()
+                self._update_canvas()
                 self.has_started = False
             else:
                 print("Error! Nothing to clear")
         elif Id == self.PLAY_ID:
             if not self.timer.IsRunning():
-                self.timer.Start(int(self.DEF_SPEED / self.SPEEDS[self.speed_slider.GetValue()]))
+                self.timer.Start(int(
+                    self.DEF_SPEED
+                    / self.SPEEDS[self.speed_slider.GetValue()]))
                 self.has_started = True
             else:
                 print("Error! Simulation is already running")
@@ -690,13 +696,13 @@ class Gui(wx.Frame):
         else:
             self.run_button.SetLabel("Run")
 
-    def on_scroll(self, event):
+    def _on_scroll(self, event):
         """Handle canvas repositioning on scroll."""
         self.canvas.pan_x = -self.hscrollbar.GetThumbPosition()
         self.canvas.pan_y = self.vscrollbar.GetThumbPosition()
-        self.update_canvas()
+        self._update_canvas()
 
-    def update_canvas(self):
+    def _update_canvas(self):
         """Force the canvas to update."""
         self.canvas.Refresh()
         self.canvas.Update()
