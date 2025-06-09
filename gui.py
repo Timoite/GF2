@@ -43,6 +43,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         self.size = self.GetClientSize()
         self.last_mouse_x = 0  # previous mouse x position
         self.last_mouse_y = 0  # previous mouse y position
+        self.cycles_per_tick = 5
 
         # Initialise variables for zooming
         self.zoom_x = 1
@@ -129,7 +130,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 GL.glVertex2f(self.max_x, j)
                 GL.glEnd()
         for i in range(int(self.max_x)):
-            if (i-BORDER_Y) % (3*DX) == 0:
+            if (i-BORDER_Y) % (self.cycles_per_tick*DX) == 0:
                 GL.glLineWidth(1)
                 GL.glColor3f(0.4, 0.4, 0.4)
                 GL.glBegin(GL.GL_LINE_STRIP)
@@ -139,7 +140,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
 
         # if sim has been run, draw trace
         if self.monitors_dictionary:
-            colours = self.parent.generate_colors(len(self.monitors_dictionary))
+            colours = self.parent.generate_colours(len(self.monitors_dictionary))
             for i, item in enumerate(self.monitors_dictionary.items()):
                 sig_list = item[1]
                 
@@ -263,9 +264,13 @@ class Gui(wx.Frame):
         self.monitors = None
         self.cycles_completed = 0
 
-        self.OPEN_ID = 997
-        self.ABOUT_ID = 998
-        self.QUIT_ID = 999
+        self.OPEN_ID = 1000
+        self.ABOUT_ID = 1001
+        self.QUIT_ID = 1002
+        self.RUN_ID = 1003
+        self.CONTINUE_ID = 1004
+        self.PLAY_ID = 1005
+        self.PAUSE_ID = 1006
 
         # Configure the file menu
         fileMenu = wx.Menu()
@@ -273,10 +278,10 @@ class Gui(wx.Frame):
         fileMenu.Append(self.ABOUT_ID, "&About")
         fileMenu.Append(self.QUIT_ID, "&Exit")
         runMenu = wx.Menu()
-        runMenu.Append(self.OPEN_ID, "&Run")
-        runMenu.Append(self.OPEN_ID, "&Continue")
-        runMenu.Append(self.OPEN_ID, "&Play")
-        runMenu.Append(self.OPEN_ID, "&Pause")
+        runMenu.Append(self.RUN_ID, "&Run")
+        runMenu.Append(self.CONTINUE_ID, "&Continue")
+        runMenu.Append(self.PLAY_ID, "&Play")
+        runMenu.Append(self.PAUSE_ID, "&Pause")
         menuBar = wx.MenuBar()
         menuBar.Append(fileMenu, "&File")
         menuBar.Append(runMenu, "&Run")
@@ -294,77 +299,93 @@ class Gui(wx.Frame):
 
         # ----- Configure the widgets -----
         # Run
-        run_text = wx.StaticText(self, wx.ID_ANY, "Run for N cycles:")
-        run_cont_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        cycles_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        total_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        run_text1 = wx.StaticText(self, wx.ID_ANY, "Run for N cycles")
         cycles_text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
-        self.spin = wx.SpinCtrl(self, wx.ID_ANY, '20', min=1, max=1000)
+        self.cycles_spin = wx.SpinCtrl(self, wx.ID_ANY, '20', min=1, max=10000)
         run_button = wx.Button(self, wx.ID_ANY, "Run")
         cont_button = wx.Button(self, wx.ID_ANY, "Continue")
+
+        run_text2 = wx.StaticText(self, wx.ID_ANY, "Run indefinitely")
+        play_button = wx.Button(self, wx.ID_ANY, "Play")
+        pause_button = wx.Button(self, wx.ID_ANY, "Pause")
+
         total_cycles_text = wx.StaticText(self, wx.ID_ANY, "Total Cycles: ")
         self.total_cycles_text = wx.StaticText(self, wx.ID_ANY, "0")
 
         # Monitors
         monitors_text = wx.StaticText(self, wx.ID_ANY, "Monitors")
-        add_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        zap_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        add_text = wx.StaticText(self, wx.ID_ANY, "Add monitor:")
-        self.add_choice = wx.Choice(self, choices=[])
-        zap_text = wx.StaticText(self, wx.ID_ANY, "Zap monitor:")
-        self.zap_choice = wx.Choice(self, choices=[])
 
         # Switches
         switches_text = wx.StaticText(self, wx.ID_ANY, "Switches")
 
-        # Scrollbars
+        # Scale
+        scale_text1 = wx.StaticText(self, wx.ID_ANY, "Scale")
+        scale_text2 = wx.StaticText(self, wx.ID_ANY, "Cycles per tick:")
+        self.scale_spin = wx.SpinCtrl(self, wx.ID_ANY, '5', min=1, max=1000)
+
+        # Canvas
+        self.canvas = MyGLCanvas(self)
         self.hscrollbar = wx.ScrollBar(self, style=wx.HORIZONTAL)
         self.vscrollbar = wx.ScrollBar(self, style=wx.VERTICAL)
         self.hscrollbar.SetScrollbar(0, 20, 50, 15)
         self.vscrollbar.SetScrollbar(0, 20, 50, 15)
-
-        # Canvas
-        self.canvas = MyGLCanvas(self)
 
         # ----- Configure sizers ------
         # Main layout
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
         left_sizer = wx.BoxSizer(wx.VERTICAL)
         right_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=0, vgap=0)
+
         main_sizer.Add(left_sizer, 1, wx.ALL, 5)
         main_sizer.Add(right_sizer, 100, wx.EXPAND | wx.ALL, 5)
 
         # Left
         run_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
+        run_cont_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        cycles_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        play_pause_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        total_sizer = wx.BoxSizer(wx.HORIZONTAL)
         monitors_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
         switches_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
+        self.monitors_rows_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.monitors_scroll = wx.ScrolledWindow(self, style=wx.VSCROLL)
+        self.monitors_scroll.SetScrollRate(10, 10)
+        self.monitors_scroll.SetSizer(self.monitors_rows_sizer)
         self.switches_rows_sizer = wx.BoxSizer(wx.VERTICAL)
         self.switches_scroll = wx.ScrolledWindow(self, style=wx.VSCROLL)
         self.switches_scroll.SetScrollRate(10, 10)
         self.switches_scroll.SetSizer(self.switches_rows_sizer)
-        left_sizer.Add(run_sizer, 0, wx.EXPAND | wx.ALL, 5)
-        left_sizer.Add(monitors_sizer, 0, wx.EXPAND | wx.ALL, 5)
-        left_sizer.Add(switches_sizer, 1, wx.EXPAND | wx.ALL, 5)
-        run_sizer.Add(run_text, 0, wx.CENTER | wx.ALL, 10)
+        scale_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
+        scale_h_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        left_sizer.Add(run_sizer, 1, wx.EXPAND | wx.ALL, 5)
+        left_sizer.Add(monitors_sizer, 5, wx.EXPAND | wx.ALL, 5)
+        left_sizer.Add(switches_sizer, 5, wx.EXPAND | wx.ALL, 5)
+        left_sizer.Add(scale_sizer, 0, wx.EXPAND | wx.ALL, 5)
+        run_sizer.Add(run_text1, 0, wx.CENTER)
+        run_sizer.Add(run_cont_sizer, 0, wx.CENTER | wx.TOP, 10)
         run_sizer.Add(cycles_sizer, 0, wx.CENTER | wx.ALL, 5)
-        run_sizer.Add(run_cont_sizer, 0, wx.CENTER | wx.ALL, 5)
-        run_sizer.Add(total_sizer, 0, wx.CENTER | wx.ALL, 5)
+        run_sizer.Add(run_text2, 0, wx.CENTER | wx.TOP, 20)
+        run_sizer.Add(play_pause_sizer, 0, wx.CENTER | wx.TOP, 10)
+        run_sizer.Add(total_sizer, 0, wx.CENTER | wx.TOP, 25)
         cycles_sizer.Add(cycles_text, 1, wx.CENTER | wx.RIGHT, 10)
-        cycles_sizer.Add(self.spin, 0, wx.CENTER)
+        cycles_sizer.Add(self.cycles_spin, 0, wx.CENTER)
         run_cont_sizer.Add(run_button, 1, wx.CENTER | wx.RIGHT, 10)
         run_cont_sizer.Add(cont_button, 1, wx.CENTER)
+        play_pause_sizer.Add(play_button, 1, wx.CENTER | wx.RIGHT, 10)
+        play_pause_sizer.Add(pause_button, 1, wx.CENTER)
         total_sizer.Add(total_cycles_text, 0, wx.CENTER | wx.RIGHT, 5)
         total_sizer.Add(self.total_cycles_text, 0, wx.CENTER)
-        monitors_sizer.Add(monitors_text, 1, wx.CENTER | wx.ALL, 10)
-        monitors_sizer.Add(add_sizer)
-        monitors_sizer.Add(zap_sizer)
-        add_sizer.Add(add_text, 0, wx.CENTER | wx.ALL, 10)
-        add_sizer.Add(self.add_choice, 0, wx.CENTER)
-        zap_sizer.Add(zap_text, 0, wx.CENTER | wx.ALL, 10)
-        zap_sizer.Add(self.zap_choice, 0, wx.CENTER)
-        switches_sizer.Add(switches_text, 1, wx.CENTER | wx.ALL, 10)
-        switches_sizer.Add(self.switches_scroll, 100, wx.EXPAND | wx.CENTER)
+        monitors_sizer.Add(monitors_text, 0, wx.CENTER | wx.BOTTOM, 10)
+        monitors_sizer.Add(self.monitors_scroll, 2, wx.EXPAND | wx.CENTER | wx.ALL, 5)
+        self.monitors_rows_sizer.Fit(self.monitors_scroll)
+        switches_sizer.Add(switches_text, 0, wx.CENTER | wx.BOTTOM, 10)
+        switches_sizer.Add(self.switches_scroll, 1, wx.EXPAND | wx.CENTER)
         self.switches_rows_sizer.Fit(self.switches_scroll)
+        scale_sizer.Add(scale_text1, 0, wx.CENTER)
+        scale_sizer.Add(scale_h_sizer, 0, wx.CENTER | wx.ALL, 5)
+        scale_h_sizer.Add(scale_text2, 0, wx.CENTER | wx.RIGHT, 10)
+        scale_h_sizer.Add(self.scale_spin, 0, wx.CENTER)
 
         # Right
         right_sizer.AddGrowableCol(0, 1)
@@ -377,14 +398,13 @@ class Gui(wx.Frame):
         self.Bind(wx.EVT_MENU, self._on_menu)
         run_button.Bind(wx.EVT_BUTTON, self._run)
         cont_button.Bind(wx.EVT_BUTTON, self._continue)
-        self.add_choice.Bind(wx.EVT_CHOICE, self._on_add_choice)
-        self.zap_choice.Bind(wx.EVT_CHOICE, self._on_zap_choice)
         self.hscrollbar.Bind(wx.EVT_SCROLL, self.on_scroll)
         self.vscrollbar.Bind(wx.EVT_SCROLL, self.on_scroll)
+        self.scale_spin.Bind(wx.EVT_SPIN, self._on_scale)
 
         # Set screen size
-        self.SetSizeHints(500, 500)
-        self.SetSize(600, 600)
+        self.SetSizeHints(720, 720)
+        self.SetSize(720, 720)
         self.SetSizer(main_sizer)
         self.SetPosition((0, 50))
 
@@ -407,7 +427,11 @@ class Gui(wx.Frame):
         if not self.devices.set_switch(switch_id, switch_state):
             print("Error! Invalid switch.")
 
-    def _create_monitor(self, signal_name):
+    def _on_scale(self, event):
+        self.canvas.cycles_per_tick = self.scale_spin.GetValue()
+        self.update_canvas()
+
+    def _add_monitor(self, signal_name):
         """Create a new monitor."""
         # Get which signal to add
         [device_id, output_id] = self.devices.get_signal_ids(signal_name)
@@ -417,7 +441,7 @@ class Gui(wx.Frame):
         monitor_error = self.monitors.make_monitor(
             device_id, output_id, self.cycles_completed)
         if monitor_error == self.monitors.NO_ERROR:
-            self._set_choice_options()
+            self._update_monitor_list()
             print("Successfully made monitor.")
         else:
             print("Error! Could not make monitor.")
@@ -429,36 +453,49 @@ class Gui(wx.Frame):
         device_id = self.names.get_name_string(device_id)
 
         if self.monitors.remove_monitor(device_id, output_id):
-            self._set_choice_options()
+            self._update_monitor_list()
             print("Successfully zapped monitor.")
         else:
             print("Error! Could not zap monitor.")
 
-    def _set_choice_options(self):
-        default = "- Select -"
+    def _update_monitor_list(self):
+        self.monitors_rows_sizer.Clear(True)
         [monitored, unmonitored] = self.monitors.get_signal_names()
-        monitored.insert(0, default)
-        unmonitored.insert(0, default)
-        self.add_choice.SetItems(unmonitored)
-        self.add_choice.SetSelection(0)
-        self.zap_choice.SetItems(monitored)
-        self.zap_choice.SetSelection(0)
 
-    def _on_add_choice(self, event):
-        signal_int = self.add_choice.GetSelection()
-        if signal_int == 0:  # No signals to add
-            return
-        signal_name = self.monitors.get_signal_names()[1][signal_int - 1]
-        self._create_monitor(signal_name)
-        self.canvas.on_paint(None)
+        colours = self.generate_colours(len(monitored))
+        for i, sig in enumerate(monitored):
+            r, g, b = colours[i]
+            R, G, B = int(r*255), int(g*255), int(b*255)
+            monitor_row_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            checkbox = wx.CheckBox(self.monitors_scroll, wx.ID_ANY, sig)
+            checkbox.SetValue(True)
+            checkbox.Bind(wx.EVT_CHECKBOX, self._on_checkbox)
+            line = wx.Panel(self.monitors_scroll, size=(40,5))
+            line.SetBackgroundColour((R, G, B))
+            monitor_row_sizer.Add(checkbox, 1, wx.EXPAND)
+            monitor_row_sizer.Add(line, 0, wx.CENTER | wx.RIGHT, 10)
+            self.monitors_rows_sizer.Add(monitor_row_sizer, 0, wx.CENTER | wx.EXPAND | wx.ALL, 5)
 
-    def _on_zap_choice(self, event):
-        signal_int = self.zap_choice.GetSelection()
-        if signal_int == 0:  # No signals to zap
-            return
-        signal_name = self.monitors.get_signal_names()[0][signal_int - 1]
-        self._zap_montior(signal_name)
-        self.canvas.on_paint(None)
+        for sig in unmonitored:
+            monitor_row_sizer = wx.BoxSizer(wx.HORIZONTAL)
+            checkbox = wx.CheckBox(self.monitors_scroll, wx.ID_ANY, sig)
+            checkbox.SetValue(False)
+            checkbox.Bind(wx.EVT_CHECKBOX, self._on_checkbox)
+            monitor_row_sizer.Add(checkbox, 1, wx.EXPAND)
+            self.monitors_rows_sizer.Add(monitor_row_sizer, 0, wx.CENTER | wx.EXPAND | wx.ALL, 5)
+
+        self.Layout()
+
+    def _on_checkbox(self, event):
+        checkbox = event.GetEventObject()
+        signal_name = checkbox.GetLabel()
+        checked = checkbox.IsChecked()
+        print(signal_name, checked)
+        if checked:
+            self._add_monitor(signal_name)
+        else:
+            self._zap_montior(signal_name)
+        self.update_canvas()
 
     def _on_menu(self, event):
         Id = event.GetId()
@@ -469,6 +506,14 @@ class Gui(wx.Frame):
         elif Id == self.ABOUT_ID:
             wx.MessageBox("Logic Simulatorinator\nCreated by Harry Weedon, Thomas Barker and Tim Tan\n2025",
                           "About Logsim", wx.ICON_INFORMATION | wx.OK)
+        elif Id == self.RUN_ID:
+            self._run()
+        elif Id == self.CONTINUE_ID_ID:
+            self._continue()
+        elif Id == self.PLAY_ID:
+            self._run()
+        elif Id == self.PAUSE_ID:
+            self._run()
 
     def _on_toolbar(self, event): 
         Id = event.GetId()
@@ -518,9 +563,10 @@ class Gui(wx.Frame):
         # Clear any existing traces
         for monitor in self.monitors.monitors_dictionary:
             self.monitors.monitors_dictionary[monitor] = []
+        self.canvas.monitors_dictionary = self.monitors.monitors_dictionary
 
-        self._set_choice_options()
-        self.update_canvas
+        self._update_monitor_list()
+        self.update_canvas()
 
     def _run_network(self):
         """Run the network for the specified number of simulation cycles.
@@ -528,7 +574,7 @@ class Gui(wx.Frame):
         Return True if successful.
         """
         # Get user input
-        cycles = self.spin.GetValue()
+        cycles = self.cycles_spin.GetValue()
 
         # Run
         for _ in range(cycles):
@@ -591,7 +637,7 @@ class Gui(wx.Frame):
         wx.GetApp().Yield()
         self.update_scrollbars()
 
-    def generate_colors(self, n):
+    def generate_colours(self, n):
         """
         Generate `n` distinct high-saturation RGB colors in a repeatable order.
         Returns a list of RGB tuples with values in the range [0, 255].
