@@ -97,28 +97,23 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GL.glLoadIdentity()
 
         # Posistioning constants
-        DX = 15
+        self.DX = 15
         DY = 30
-        BORDER_Y = 2*DY
-        BORDER_X = DX
-        LINE_HEIGHT = 2*DY + BORDER_Y
+        BORDER_Y = 2 * DY
+        self.BORDER_X = self.DX
+        self.LINE_HEIGHT = 2 * DY + BORDER_Y
         TOP = self.size.height - self.SCALE_HEIGHT
-        CYCLES_PER_TICK = max(5 * round(DY / (DX * self.zoom_x * 5)), 5)
+        CYCLES_PER_TICK = max(5 * round(DY / (self.DX * self.zoom_x * 5)), 5)
 
         # Apply pan and zoom
         GL.glTranslated(self.pan_x, self.pan_y, 0.0)
         GL.glScaled(self.zoom_x, self.zoom_y, 1.0)
 
-        # If sim has been run, adjust canvas size
-        if self.monitors_dictionary:
-            self.signals_width = 2 * BORDER_X + \
-                self.parent.cycles_completed * DX
-            self.signals_height = len(self.monitors_dictionary) * LINE_HEIGHT
-        self._check_canvas_size()
+        self.check_canvas_size()
 
         # Draw axes
         for i in range(int(self.max_x)):  # Vertical
-            if (i-BORDER_X) % (CYCLES_PER_TICK*DX) == 0:
+            if (i-self.BORDER_X) % (CYCLES_PER_TICK*self.DX) == 0:
                 GL.glLineWidth(1)
                 GL.glColor3f(0.4, 0.4, 0.4)
                 GL.glBegin(GL.GL_LINE_STRIP)
@@ -146,7 +141,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             for i, item in enumerate(self.monitors_dictionary.items()):
                 sig_list = item[1]
 
-                y_MID = TOP - (LINE_HEIGHT * i) - BORDER_Y
+                y_MID = TOP - (self.LINE_HEIGHT * i) - BORDER_Y
                 y_HIGH = y_MID + DY
                 y_LOW = y_MID - DY
 
@@ -156,8 +151,8 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 GL.glLineWidth(10)
                 GL.glBegin(GL.GL_LINE_STRIP)
                 for j, sig in enumerate(sig_list):
-                    x = (j * DX) + BORDER_X
-                    x_next = (j * DX) + BORDER_X + DX
+                    x = (j * self.DX) + self.BORDER_X
+                    x_next = (j * self.DX) + self.BORDER_X + self.DX
                     if sig == self.devices.HIGH:
                         y = y_HIGH
                         y_next = y_HIGH
@@ -198,8 +193,9 @@ class MyGLCanvas(wxcanvas.GLCanvas):
 
         # Add x axis
         for i in range(int(self.max_x)):
-            if (i-BORDER_X) % (CYCLES_PER_TICK*DX) == 0:
-                num = CYCLES_PER_TICK*(i-BORDER_X) // (CYCLES_PER_TICK*DX)
+            if (i-self.BORDER_X) % (CYCLES_PER_TICK*self.DX) == 0:
+                num = CYCLES_PER_TICK*(i-self.BORDER_X)\
+                    // (CYCLES_PER_TICK*self.DX)
                 if num >= 0:
                     self.render_text(str(num), i, self.size.height - 18)
 
@@ -272,7 +268,14 @@ class MyGLCanvas(wxcanvas.GLCanvas):
 
         self.Refresh()
 
-    def _check_canvas_size(self):
+    def check_canvas_size(self):
+        """Recalculate the size of the canvas."""
+        if self.monitors_dictionary:
+            self.signals_width = 2 * self.BORDER_X + \
+                self.parent.cycles_completed * self.DX
+            self.signals_height = len(self.monitors_dictionary)\
+                * self.LINE_HEIGHT
+
         # If screen is larger than canvas, hide scollbars
         if self.size.width / self.zoom_x >= self.signals_width:
             self.max_x = self.size.width / self.zoom_x
@@ -281,7 +284,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             self.max_x = self.signals_width
             self.parent.hscrollbar.Show()
         if self.size.height / self.zoom_y >= self.signals_height:
-            self.max_y = self.size.height / self.zoom_y
+            self.max_y = (self.size.height - self.SCALE_HEIGHT) / self.zoom_y
             self.parent.vscrollbar.Hide()
         else:
             self.max_y = self.signals_height
@@ -375,11 +378,6 @@ class Gui(wx.Frame):
         # Switches
         switches_text = wx.StaticText(self, wx.ID_ANY, "Switches")
 
-        # Scale
-        scale_text1 = wx.StaticText(self, wx.ID_ANY, "Scale")
-        scale_text2 = wx.StaticText(self, wx.ID_ANY, "Cycles per Gridline:")
-        self.scale_spin = wx.SpinCtrl(self, wx.ID_ANY, '5', min=1, max=1000)
-
         # Canvas
         self.canvas = MyGLCanvas(self)
         self.hscrollbar = wx.ScrollBar(self, style=wx.HORIZONTAL)
@@ -413,13 +411,10 @@ class Gui(wx.Frame):
         self.switches_scroll = wx.ScrolledWindow(self, style=wx.VSCROLL)
         self.switches_scroll.SetScrollRate(10, 10)
         self.switches_scroll.SetSizer(self.switches_rows_sizer)
-        scale_sizer = wx.StaticBoxSizer(wx.VERTICAL, self)
-        scale_h_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         left_sizer.Add(run_sizer, 1, wx.EXPAND | wx.ALL, 5)
         left_sizer.Add(monitors_sizer, 5, wx.EXPAND | wx.ALL, 5)
         left_sizer.Add(switches_sizer, 5, wx.EXPAND | wx.ALL, 5)
-        left_sizer.Add(scale_sizer, 0, wx.EXPAND | wx.ALL, 5)
         run_sizer.Add(run_text1, 0, wx.CENTER)
         run_sizer.Add(run_cont_sizer, 0, wx.CENTER | wx.TOP, 10)
         run_sizer.Add(cycles_sizer, 0, wx.CENTER | wx.ALL, 5)
@@ -444,10 +439,6 @@ class Gui(wx.Frame):
         switches_sizer.Add(switches_text, 0, wx.CENTER | wx.BOTTOM, 10)
         switches_sizer.Add(self.switches_scroll, 1, wx.EXPAND | wx.CENTER)
         self.switches_rows_sizer.Fit(self.switches_scroll)
-        scale_sizer.Add(scale_text1, 0, wx.CENTER)
-        scale_sizer.Add(scale_h_sizer, 0, wx.CENTER | wx.ALL, 5)
-        scale_h_sizer.Add(scale_text2, 0, wx.CENTER | wx.RIGHT, 10)
-        scale_h_sizer.Add(self.scale_spin, 0, wx.CENTER)
 
         # Right
         right_sizer.AddGrowableCol(0, 1)
@@ -466,7 +457,6 @@ class Gui(wx.Frame):
         self.speed_slider.Bind(wx.EVT_SLIDER, self._on_slider)
         self.hscrollbar.Bind(wx.EVT_SCROLL, self._on_scroll)
         self.vscrollbar.Bind(wx.EVT_SCROLL, self._on_scroll)
-        self.scale_spin.Bind(wx.EVT_SPIN, self._on_scale)
 
         # Set screen size
         self.SetSizeHints(720, 720)
@@ -495,11 +485,6 @@ class Gui(wx.Frame):
         switch_state = event.GetSelection()
         if not self.devices.set_switch(switch_id, switch_state):
             print("Error! Invalid switch.")
-
-    def _on_scale(self, event):
-        """Handle resizing of grid ticks."""
-        self.canvas.cycles_per_tick = self.scale_spin.GetValue()
-        self._update_canvas()
 
     def _add_monitor(self, signal_name):
         """Create a new monitor."""
@@ -574,7 +559,7 @@ class Gui(wx.Frame):
             self._add_monitor(signal_name)
         else:
             self._zap_montior(signal_name)
-        self._update_canvas()
+        self.canvas.Refresh()
 
     def _on_slider(self, event):
         """Handle slider events."""
@@ -654,7 +639,7 @@ class Gui(wx.Frame):
         self.canvas.monitors_dictionary = self.monitors.monitors_dictionary
 
         self._update_monitor_list()
-        self._update_canvas()
+        self.canvas.Refresh()
         self.has_started = False
 
     def _run_network(self, event=None, cycles=1):
@@ -679,10 +664,10 @@ class Gui(wx.Frame):
         self.canvas.devices = self.devices
 
         # Scroll canvas all the way to the right
-        self._update_canvas()
+        self.canvas.check_canvas_size()
         self.canvas.pan_x = self.canvas.size.width\
             - (self.canvas.max_x * self.canvas.zoom_x)
-        self._update_canvas()
+        self.canvas.Refresh()
 
         return True
 
@@ -717,7 +702,7 @@ class Gui(wx.Frame):
                     self.monitors.monitors_dictionary
                 self.cycles_completed = 0
                 self.canvas.pan_x = self.canvas.pan_y = 0
-                self._update_canvas()
+                self.canvas.Refresh()
                 self.has_started = False
             else:
                 print("Error! Unable to clear")
@@ -728,12 +713,12 @@ class Gui(wx.Frame):
                     / self.SPEEDS[self.speed_slider.GetValue()]))
                 self.has_started = True
             else:
-                print("Error! Simulation is already running")
+                print("Error! Already running simulation")
         elif Id == self.PAUSE_ID:
             if self.timer.IsRunning():
                 self.timer.Stop()
             else:
-                print("Error! Simulation is not running")
+                print("Error! Not running simulation")
 
         if self.has_started:
             self.run_button.SetLabel("Continue")
@@ -744,13 +729,7 @@ class Gui(wx.Frame):
         """Handle canvas repositioning on scroll."""
         self.canvas.pan_x = -self.hscrollbar.GetThumbPosition()
         self.canvas.pan_y = self.vscrollbar.GetThumbPosition()
-        self._update_canvas()
-
-    def _update_canvas(self):
-        """Force the canvas to update."""
         self.canvas.Refresh()
-        self.canvas.Update()
-        wx.GetApp().Yield()
 
     def generate_colours(self, n):
         """Generate n unique colours."""
