@@ -268,17 +268,17 @@ class Gui(wx.Frame):
 
         # Configure the file menu
         fileMenu = wx.Menu()
-        fileMenu.Append(self.OPEN_ID, "&Open")
-        fileMenu.Append(self.ABOUT_ID, "&About")
-        fileMenu.Append(self.QUIT_ID, "&Exit")
+        fileMenu.Append(self.OPEN_ID, _(u"&Open"))
+        fileMenu.Append(self.ABOUT_ID, _(u"&About"))
+        fileMenu.Append(self.QUIT_ID, _(u"&Exit"))
         runMenu = wx.Menu()
-        runMenu.Append(self.OPEN_ID, "&Run")
-        runMenu.Append(self.OPEN_ID, "&Continue")
-        runMenu.Append(self.OPEN_ID, "&Play")
-        runMenu.Append(self.OPEN_ID, "&Pause")
+        runMenu.Append(self.OPEN_ID, _(u"&Run"))
+        runMenu.Append(self.OPEN_ID, _(u"&Continue"))
+        runMenu.Append(self.OPEN_ID, _(u"&Play"))
+        runMenu.Append(self.OPEN_ID, _(u"&Pause"))
         menuBar = wx.MenuBar()
-        menuBar.Append(fileMenu, "&File")
-        menuBar.Append(runMenu, "&Run")
+        menuBar.Append(fileMenu, _(u"&File"))
+        menuBar.Append(runMenu, _(u"&Run"))
         self.SetMenuBar(menuBar)
 
         # Configure the toolbar
@@ -293,28 +293,28 @@ class Gui(wx.Frame):
 
         # ----- Configure the widgets -----
         # Run
-        run_text = wx.StaticText(self, wx.ID_ANY, "Run for N cycles:")
+        run_text = wx.StaticText(self, wx.ID_ANY, _(u"Run for N cycles:"))
         run_cont_sizer = wx.BoxSizer(wx.HORIZONTAL)
         cycles_sizer = wx.BoxSizer(wx.HORIZONTAL)
         total_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        cycles_text = wx.StaticText(self, wx.ID_ANY, "Cycles:")
+        cycles_text = wx.StaticText(self, wx.ID_ANY, _(u"Cycles:"))
         self.spin = wx.SpinCtrl(self, wx.ID_ANY, '20', min=1, max=1000)
-        run_button = wx.Button(self, wx.ID_ANY, "Run")
-        cont_button = wx.Button(self, wx.ID_ANY, "Continue")
-        total_cycles_text = wx.StaticText(self, wx.ID_ANY, "Total Cycles: ")
-        self.total_cycles_text = wx.StaticText(self, wx.ID_ANY, "0")
+        run_button = wx.Button(self, wx.ID_ANY, _(u"Run"))
+        cont_button = wx.Button(self, wx.ID_ANY, _(u"Continue"))
+        total_cycles_text = wx.StaticText(self, wx.ID_ANY, _(u"Total Cycles: "))
+        self.total_cycles_text = wx.StaticText(self, wx.ID_ANY, _(u"0"))
 
         # Monitors
-        monitors_text = wx.StaticText(self, wx.ID_ANY, "Monitors")
+        monitors_text = wx.StaticText(self, wx.ID_ANY, _(u"Monitors"))
         add_sizer = wx.BoxSizer(wx.HORIZONTAL)
         zap_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        add_text = wx.StaticText(self, wx.ID_ANY, "Add monitor:")
+        add_text = wx.StaticText(self, wx.ID_ANY, _(u"Add monitor:"))
         self.add_choice = wx.Choice(self, choices=[])
-        zap_text = wx.StaticText(self, wx.ID_ANY, "Zap monitor:")
+        zap_text = wx.StaticText(self, wx.ID_ANY, _(u"Zap monitor:"))
         self.zap_choice = wx.Choice(self, choices=[])
 
         # Switches
-        switches_text = wx.StaticText(self, wx.ID_ANY, "Switches")
+        switches_text = wx.StaticText(self, wx.ID_ANY, _(u"Switches"))
 
         # Scrollbars
         self.hscrollbar = wx.ScrollBar(self, style=wx.HORIZONTAL)
@@ -404,7 +404,7 @@ class Gui(wx.Frame):
         """Handle event when a switch is toggled."""
         switch_state = event.GetSelection()
         if not self.devices.set_switch(switch_id, switch_state):
-            print("Error! Invalid switch.")
+            print(_(u"Error! Invalid switch."))
 
     def _create_monitor(self, signal_name):
         """Create a new monitor."""
@@ -434,7 +434,7 @@ class Gui(wx.Frame):
             print("Error! Could not zap monitor.")
 
     def _set_choice_options(self):
-        default = "- Select -"
+        default = _(u"- Select -")
         [monitored, unmonitored] = self.monitors.get_signal_names()
         monitored.insert(0, default)
         unmonitored.insert(0, default)
@@ -466,8 +466,8 @@ class Gui(wx.Frame):
         elif Id == self.QUIT_ID:
             self._quit(event)
         elif Id == self.ABOUT_ID:
-            wx.MessageBox("Logic Simulatorinator\nCreated by Harry Weedon, Thomas Barker and Tim Tan\n2025",
-                          "About Logsim", wx.ICON_INFORMATION | wx.OK)
+            wx.MessageBox(_(u"Logic Simulatorinator\nCreated by Harry Weedon, Thomas Barker and Tim Tan\n2025"),
+                          _(u"About Logsim"), wx.ICON_INFORMATION | wx.OK)
 
     def _on_toolbar(self, event): 
         Id = event.GetId()
@@ -480,13 +480,13 @@ class Gui(wx.Frame):
         """Open a file specified by the user."""
         # Opens file selector
         openFileDialog = wx.FileDialog(
-            self, "Open txt file", "", "",
-            wildcard="TXT files (*.txt)|*.txt",
+            self, _(u"Open txt file"), "", "",
+            wildcard=_(u"TXT files (*.txt)|*.txt"),
             style=wx.FD_OPEN+wx.FD_FILE_MUST_EXIST)
         if openFileDialog.ShowModal() == wx.ID_CANCEL:
             return
         self.path = openFileDialog.GetPath()
-        print("File chosen =", self.path)
+        print(_(u"File chosen ="), self.path)
 
         # Make sure gui is blank
         self.cycles_completed = 0

@@ -21,8 +21,23 @@ from monitors import Monitors
 from scanner import Scanner
 from parse import Parser
 from userint import UserInterface
-from gui import Gui
 
+import gettext
+import locale
+import os
+
+def setup_i18n():
+    """Set up internationalization for the application."""
+    lang = os.environ.get('LANG', 'en_US.UTF-8')
+    if 'zh' in lang:
+        translation = gettext.translation('logsim', 'locale', languages=['zh_CN'])
+        translation.install()
+    else:
+        gettext.install('logsim', 'locale')
+
+setup_i18n()
+
+from gui import Gui
 
 def main(arg_list):
     """Parse the command line options and arguments specified in arg_list.
@@ -61,7 +76,7 @@ def main(arg_list):
     if not options:  # no option given, use the graphical user interface
         """Launch the simulatorinator."""
         app = wx.App()
-        gui = Gui("Logic Simulatorinator")
+        gui = Gui(_("Logic Simulatorinator"))
         gui.Show(True)
         app.MainLoop()
 
