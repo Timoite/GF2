@@ -1,4 +1,4 @@
-'''Test the scanner module (WIP)'''
+'''Test the scanner module'''
 import pytest
 from scanner import Scanner, Symbol
 from names import Names
@@ -35,7 +35,8 @@ def test_correct_symbols(new_scanner):
         symbol = scanner.get_symbol()
         symbol_types.append(symbol.type)
         i += 1
-    assert symbol_types == [0, 4, 1, 5, 2, 6, 3, 7, 8, 9, 10]
+    assert symbol_types == [0, 4, 1, 5, 2, 6, 3, 7, 8, 9, None]
+    # In normal operation EOF is now skipped as whitespace
 
 
 def test_keywords(new_scanner):
@@ -43,9 +44,10 @@ def test_keywords(new_scanner):
     scanner = new_scanner("keywords")
     i = 0
     symbol_ids = []
-    while i < 12:
+    while i < 13:
         symbol = scanner.get_symbol()
         symbol_ids.append(symbol.id)
+        print(symbol_ids)
         symbol = scanner.get_symbol()
         i += 1
     assert symbol_ids == [scanner.DEVICES_ID, scanner.CONNECTIONS_ID,
@@ -53,7 +55,8 @@ def test_keywords(new_scanner):
                           scanner.AND_ID, scanner.OR_ID,
                           scanner.NAND_ID, scanner.NOR_ID,
                           scanner.XOR_ID, scanner.CLOCK_ID,
-                          scanner.SWITCH_ID, scanner.DTYPE_ID]
+                          scanner.SWITCH_ID, scanner.DTYPE_ID,
+                          scanner.SIGGEN_ID]
 
 
 def test_non_alphabet(new_scanner):

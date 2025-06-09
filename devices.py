@@ -37,6 +37,8 @@ class Device:
         self.device_kind = None
         self.clock_half_period = None
         self.clock_counter = None
+        self.siggen_wave = None
+        self.siggen_counter = None
         self.switch_state = None
         self.dtype_memory = None
 
@@ -101,21 +103,23 @@ class Devices:
         self.devices_list = []
 
         gate_strings = ["AND", "OR", "NAND", "NOR", "XOR"]
-        device_strings = ["CLOCK", "SWITCH", "DTYPE"]
+        device_strings = ["CLOCK", "SWITCH", "DTYPE", "SIGGEN"]
         dtype_inputs = ["CLK", "SET", "CLEAR", "DATA"]
         dtype_outputs = ["Q", "QBAR"]
 
         [self.NO_ERROR, self.INVALID_QUALIFIER, self.ZERO_QUALIFIER,
          self.NO_QUALIFIER, self.QUALIFIER_OUT_OF_RANGE,
          self.BAD_DEVICE, self.QUALIFIER_PRESENT,
-         self.DEVICE_PRESENT] = self.names.unique_error_codes(8)
+         self.DEVICE_PRESENT, self.NOT_BINARY] \
+            = self.names.unique_error_codes(9)
 
         self.signal_types = [self.LOW, self.HIGH, self.RISING,
                              self.FALLING, self.BLANK] = range(5)
         self.gate_types = [self.AND, self.OR, self.NAND, self.NOR,
                            self.XOR] = self.names.lookup(gate_strings)
         self.device_types = [self.CLOCK, self.SWITCH,
-                             self.D_TYPE] = self.names.lookup(device_strings)
+                             self.D_TYPE, self.SIGGEN] = \
+            self.names.lookup(device_strings)
         self.dtype_input_ids = [self.CLK_ID, self.SET_ID, self.CLEAR_ID,
                                 self.DATA_ID] = self.names.lookup(dtype_inputs)
         self.dtype_output_ids = [
@@ -238,6 +242,16 @@ class Devices:
         device.clock_half_period = clock_half_period
         self.cold_startup()  # clock initialised to a random point in its cycle
 
+    def make_siggen(self, device_id, siggen_wave):
+        """Make a clock device with the specified wave.
+
+        siggen_wave is a binary number of any length.
+        """
+        self.add_device(device_id, self.SIGGEN)
+        device = self.get_device(device_id)
+        device.siggen_wave = siggen_wave
+        self.cold_startup()  # clock initialised to a random point in its cycle
+
     def make_gate(self, device_id, device_kind, no_of_inputs):
         """Make logic gates with the specified number of inputs."""
         self.add_device(device_id, device_kind)
@@ -275,6 +289,13 @@ class Devices:
                 device.clock_counter = \
                     random.randrange(device.clock_half_period)
 
+            elif device.device_kind == self.SIGGEN:
+                siggen_signal = random.choice([self.LOW, self.HIGH])
+                self.add_output(device.device_id, output_id=None,
+                                signal=siggen_signal)
+                device.siggen_counter = \
+                    random.randrange(len(str(device.siggen_wave)))
+
     def make_device(self, device_id, device_kind, device_property=None):
         """Create the specified device.
 
@@ -303,6 +324,21 @@ class Devices:
             else:
                 self.make_clock(device_id, device_property)
                 error_type = self.NO_ERROR
+
+        elif device_kind == self.SIGGEN:
+            # Device property is the output wave
+            if device_property is None:
+                error_type = self.NO_QUALIFIER
+            else:
+                acceptable = 1
+                for i in str(device_property):
+                    if i not in ["0", "1"]:
+                        acceptable = 0
+                if acceptable == 0:
+                    error_type = self.NOT_BINARY
+                else:
+                    self.make_siggen(device_id, device_property)
+                    error_type = self.NO_ERROR
 
         elif device_kind in self.gate_types:
             # Device property is the number of inputs
