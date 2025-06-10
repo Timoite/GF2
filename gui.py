@@ -41,7 +41,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         self.signals_width = 0
         self.signals_height = 0
         self.size = self.GetClientSize()
-        self.SCALE_HEIGHT = 30
+        self.SCALE_HEIGHT = 40
 
         # Initialise variables for zooming
         self.zoom_x = 1
@@ -135,6 +135,8 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 GL.glEnd()
 
         # If sim has been run, draw trace
+        colours = self.parent.generate_colours(
+                len(self.monitors_dictionary))
         if self.monitors_dictionary:
             colours = self.parent.generate_colours(
                 len(self.monitors_dictionary))
@@ -172,9 +174,21 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                     j += 1
                 GL.glEnd()
                 GL.glLineWidth(1)
-
+                
         # Undo vertical scroll
-        GL.glTranslated(0.0, -self.pan_y, 0.0)
+        GL.glTranslated(-self.pan_x, 0.0, 0.0)
+        
+        # Add trace labels
+        if self.monitors_dictionary:
+            colours = self.parent.generate_colours(
+                len(self.monitors_dictionary))
+            for i, item in enumerate(self.monitors_dictionary.items()):
+                sig_name = item[0][0]
+                y = TOP - (self.LINE_HEIGHT * i) - (BORDER_Y / 4)
+                self.render_text(sig_name, 10, y, False, False, colours[i])
+
+        # Undo horizontal scroll and re-add vertical
+        GL.glTranslated(self.pan_x, -self.pan_y, 0.0)
 
         # Make blank box at the top
         GL.glColor3f(0.0, 0.0, 0.0)
@@ -191,24 +205,30 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GL.glVertex2f(self.max_x, self.size.height - self.SCALE_HEIGHT)
         GL.glEnd()
 
-        # Add x axis
+        # Add x axis scale
         for i in range(int(self.max_x)):
-            if (i-self.BORDER_X) % (CYCLES_PER_TICK*self.DX) == 0:
+            if (i-self.BORDER_X) % (2*CYCLES_PER_TICK*self.DX) == 0:
                 num = CYCLES_PER_TICK*(i-self.BORDER_X)\
                     // (CYCLES_PER_TICK*self.DX)
                 if num >= 0:
-                    self.render_text(str(num), i, self.size.height - 18)
+                    self.render_text(str(num), i, self.size.height - (self.SCALE_HEIGHT / 2))
 
         GL.glFlush()
         self.SwapBuffers()
 
-    def render_text(self, text, x_pos, y_pos):
+    def render_text(self, text, x_pos, y_pos, center=True, big=True, colour=(1.0, 1.0, 1.0)):
         """Handle text drawing operations."""
-        GL.glColor3f(1.0, 1.0, 1.0)  # text is white
-        font = GLUT.GLUT_BITMAP_TIMES_ROMAN_24
-        line_width = sum(GLUT.glutBitmapWidth(font, ord(c)) for c in text)
-        x_pos -= int(line_width / (4 * self.zoom_x))
-        x_pos = max(x_pos, 0)
+        GL.glColor3f(colour[0], colour[1], colour[2])
+        if big:
+            font = GLUT.GLUT_BITMAP_TIMES_ROMAN_24
+        else:
+            font = GLUT.GLUT_BITMAP_TIMES_ROMAN_10
+        if center:
+            line_width = sum(GLUT.glutBitmapWidth(font, ord(c)) for c in text)
+            x_pos -= line_width / (2 * self.zoom_x)
+            x_pos = max(x_pos, 0)
+        line_height = max(GLUT.glutBitmapWidth(font, ord(c)) for c in text)
+        y_pos -= line_height / 2
         GL.glRasterPos2f(x_pos, y_pos)
         for character in text:
             GLUT.glutBitmapCharacter(font, ord(character))
@@ -253,23 +273,18 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                     self.pan_y -= dPANy
 
             self.init = False
-
-        # Make sure panning within bounds of screen
-        self.pan_x = min(0, self.pan_x)
-        self.pan_x = max(self.size.width
-                         - (self.max_x * self.zoom_x), self.pan_x)
-        self.pan_y = max(0, self.pan_y)
-        self.pan_y = min((self.max_y * self.zoom_y)
-                         - self.size.height + self.SCALE_HEIGHT, self.pan_y)
-
-        # Limit zoom
-        self.zoom_x = max(0.01, self.zoom_x)
-        self.zoom_x = min(10, self.zoom_x)
+            
+        self.check_canvas_size()
 
         self.Refresh()
 
     def check_canvas_size(self):
         """Recalculate the size of the canvas."""
+        # Limit zoom
+        self.zoom_x = max(0.01, self.zoom_x)
+        self.zoom_x = min(10, self.zoom_x)
+
+        # How much space do the signals take up
         if self.monitors_dictionary:
             self.signals_width = 2 * self.BORDER_X + \
                 self.parent.cycles_completed * self.DX
@@ -289,9 +304,17 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         else:
             self.max_y = self.signals_height
             self.parent.vscrollbar.Show()
-
         self.parent.Layout()
+        
+        # Make sure panning within bounds of screen
+        self.pan_x = min(0, self.pan_x)
+        self.pan_x = max(self.size.width
+                         - (self.max_x * self.zoom_x), self.pan_x)
+        self.pan_y = max(0, self.pan_y)
+        self.pan_y = min((self.max_y * self.zoom_y)
+                         - self.size.height + self.SCALE_HEIGHT, self.pan_y)
 
+        # Set scrollbar positions
         self.parent.hscrollbar.SetScrollbar(
             int(-self.pan_x), int(self.size.width),
             int(self.max_x * self.zoom_x), 0)
@@ -324,6 +347,9 @@ class Gui(wx.Frame):
         self.CLEAR_ID = 1004
         self.PLAY_ID = 1005
         self.PAUSE_ID = 1006
+        self.ZOOM_IN_ID = 1007
+        self.ZOOM_OUT_ID = 1008
+        self.RESET_ZOOM_ID = 1009
         self.DEF_SPEED = 50
         self.SPEEDS = [0.1, 0.2, 0.5, 1, 2, 5, 10]
 
@@ -342,9 +368,14 @@ class Gui(wx.Frame):
         runMenu.Append(self.CLEAR_ID, wx.GetTranslation(u"&Clear"))
         runMenu.Append(self.PLAY_ID, wx.GetTranslation(u"&Play"))
         runMenu.Append(self.PAUSE_ID, wx.GetTranslation(u"&Pause"))
+        viewMenu = wx.Menu()
+        viewMenu.Append(self.ZOOM_IN_ID, wx.GetTranslation(u"&Zoom In"))
+        viewMenu.Append(self.ZOOM_OUT_ID, wx.GetTranslation(u"&Zoom Out"))
+        viewMenu.Append(self.RESET_ZOOM_ID, wx.GetTranslation(u"&Reset Zoom"))
         menuBar = wx.MenuBar()
         menuBar.Append(fileMenu, wx.GetTranslation(u"&File"))
         menuBar.Append(runMenu, wx.GetTranslation(u"&Run"))
+        menuBar.Append(viewMenu, wx.GetTranslation(u"&View"))
         self.SetMenuBar(menuBar)
 
         # Configure the toolbar
@@ -391,7 +422,7 @@ class Gui(wx.Frame):
         left_sizer = wx.BoxSizer(wx.VERTICAL)
         right_sizer = wx.FlexGridSizer(rows=2, cols=2, hgap=0, vgap=0)
 
-        main_sizer.Add(left_sizer, 1, wx.ALL, 5)
+        main_sizer.Add(left_sizer)
         main_sizer.Add(right_sizer, 100, wx.EXPAND | wx.ALL, 5)
 
         # Left
@@ -430,8 +461,8 @@ class Gui(wx.Frame):
         play_pause_sizer.Add(pause_button, 1, wx.CENTER)
         speed_sizer.Add(self.speed_slider_text, 1, wx.CENTER | wx.RIGHT, 10)
         speed_sizer.Add(self.speed_slider)
-        total_sizer.Add(total_cycles_text, 0, wx.CENTER | wx.RIGHT, 5)
-        total_sizer.Add(self.total_cycles_text, 0, wx.CENTER)
+        total_sizer.Add(total_cycles_text, 0, wx.CENTER | wx.RIGHT | wx.BOTTOM, 10)
+        total_sizer.Add(self.total_cycles_text, 0, wx.CENTER | wx.BOTTOM, 10)
         monitors_sizer.Add(monitors_text, 0, wx.CENTER | wx.BOTTOM, 10)
         monitors_sizer.Add(self.monitors_scroll, 2,
                            wx.EXPAND | wx.CENTER | wx.ALL, 5)
@@ -443,8 +474,8 @@ class Gui(wx.Frame):
         # Right
         right_sizer.AddGrowableCol(0, 1)
         right_sizer.AddGrowableRow(0, 1)
-        right_sizer.Add(self.canvas, 1, wx.EXPAND)
-        right_sizer.Add(self.vscrollbar, 0, wx.EXPAND)
+        right_sizer.Add(self.canvas, 1, wx.EXPAND | wx.TOP, 10)
+        right_sizer.Add(self.vscrollbar, 0, wx.EXPAND | wx.TOP, 10)
         right_sizer.Add(self.hscrollbar, 0, wx.EXPAND)
 
         # Bind events to widgets
@@ -554,7 +585,6 @@ class Gui(wx.Frame):
         checkbox = event.GetEventObject()
         signal_name = checkbox.GetLabel()
         checked = checkbox.IsChecked()
-        print(signal_name, checked)
         if checked:
             self._add_monitor(signal_name)
         else:
@@ -582,6 +612,18 @@ class Gui(wx.Frame):
                           Created by Harry Weedon, \
                           Thomas Barker and Tim Tan\n2025"),
                           "About Logsim", wx.ICON_INFORMATION | wx.OK)
+        elif Id == self.ZOOM_IN_ID:
+            self.canvas.zoom_x *= 1.5
+            self.canvas.check_canvas_size()
+            self.canvas.Refresh()
+        elif Id == self.ZOOM_OUT_ID:
+            self.canvas.zoom_x /= 1.5
+            self.canvas.check_canvas_size()
+            self.canvas.Refresh()
+        elif Id == self.RESET_ZOOM_ID:
+            self.canvas.zoom_x = 1.0
+            self.canvas.check_canvas_size()
+            self.canvas.Refresh()
         else:
             self._on_run(event)
 
@@ -595,6 +637,9 @@ class Gui(wx.Frame):
 
     def _open_file(self, event, path=None):
         """Load a file into the simulator."""
+        if self.timer.IsRunning():
+            print("Error! Simulation is running")
+            return
         if not path:
             # Opens file selector
             openFileDialog = wx.FileDialog(
