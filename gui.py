@@ -221,7 +221,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         self.SwapBuffers()
 
     def _render_text(self, text, x_pos, y_pos,
-                    center=True, big=True, colour=(1.0, 1.0, 1.0)):
+                     center=True, big=True, colour=(1.0, 1.0, 1.0)):
         """Handle text drawing operations."""
         GL.glColor3f(colour[0], colour[1], colour[2])
         if big:
@@ -465,7 +465,7 @@ class Gui(wx.Frame):
         left_sizer.Add(monitors_sizer, 5, wx.EXPAND | wx.ALL, 5)
         left_sizer.Add(switches_sizer, 5, wx.EXPAND | wx.ALL, 5)
         run_sizer.Add(run_text1, 0, wx.CENTER)
-        run_sizer.Add(run_cont_sizer, 0, 
+        run_sizer.Add(run_cont_sizer, 0,
                       wx.CENTER | wx.TOP | wx.LEFT | wx.RIGHT, 10)
         run_sizer.Add(cycles_sizer, 0, wx.CENTER | wx.ALL, 5)
         run_sizer.Add(run_text2, 0, wx.CENTER | wx.TOP, 20)
