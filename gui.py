@@ -175,7 +175,8 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 GL.glEnd()
                 GL.glLineWidth(1)
                 
-        # Undo vertical scroll
+        # Undo horizontal scroll
+        GL.glScaled(1/self.zoom_x, 1/self.zoom_y, 1.0)
         GL.glTranslated(-self.pan_x, 0.0, 0.0)
         
         # Add trace labels
@@ -187,8 +188,9 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 y = TOP - (self.LINE_HEIGHT * i) - (BORDER_Y / 4)
                 self.render_text(sig_name, 10, y, False, False, colours[i])
 
-        # Undo horizontal scroll and re-add vertical
+        # Undo vertical scroll and re-add horizontal
         GL.glTranslated(self.pan_x, -self.pan_y, 0.0)
+        GL.glScaled(self.zoom_x, self.zoom_y, 1.0)
 
         # Make blank box at the top
         GL.glColor3f(0.0, 0.0, 0.0)
@@ -561,7 +563,7 @@ class Gui(wx.Frame):
             checkbox = wx.CheckBox(self.monitors_scroll, wx.ID_ANY, sig)
             checkbox.SetValue(True)
             checkbox.Bind(wx.EVT_CHECKBOX, self._on_checkbox)
-            line = wx.Panel(self.monitors_scroll, size=(40, 5))
+            line = wx.Panel(self.monitors_scroll, size=(20, 5))
             line.SetBackgroundColour((R, G, B))
             monitor_row_sizer.Add(checkbox, 1, wx.EXPAND)
             monitor_row_sizer.Add(line, 0, wx.CENTER | wx.RIGHT, 10)
