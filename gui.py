@@ -174,11 +174,11 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                     j += 1
                 GL.glEnd()
                 GL.glLineWidth(1)
-                
+
         # Undo horizontal scroll
         GL.glScaled(1/self.zoom_x, 1/self.zoom_y, 1.0)
         GL.glTranslated(-self.pan_x, 0.0, 0.0)
-        
+
         # Add trace labels
         if self.monitors_dictionary:
             colours = self.parent.generate_colours(
@@ -213,12 +213,15 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 num = CYCLES_PER_TICK*(i-self.BORDER_X)\
                     // (CYCLES_PER_TICK*self.DX)
                 if num >= 0:
-                    self.render_text(str(num), i, self.size.height - (self.SCALE_HEIGHT / 2))
+                    self.render_text(
+                        str(num), i,
+                        self.size.height - (self.SCALE_HEIGHT / 2))
 
         GL.glFlush()
         self.SwapBuffers()
 
-    def render_text(self, text, x_pos, y_pos, center=True, big=True, colour=(1.0, 1.0, 1.0)):
+    def render_text(self, text, x_pos, y_pos,
+                    center=True, big=True, colour=(1.0, 1.0, 1.0)):
         """Handle text drawing operations."""
         GL.glColor3f(colour[0], colour[1], colour[2])
         if big:
@@ -275,7 +278,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                     self.pan_y -= dPANy
 
             self.init = False
-            
+
         self.check_canvas_size()
 
         self.Refresh()
@@ -307,7 +310,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             self.max_y = self.signals_height
             self.parent.vscrollbar.Show()
         self.parent.Layout()
-        
+
         # Make sure panning within bounds of screen
         self.pan_x = min(0, self.pan_x)
         self.pan_x = max(self.size.width
@@ -391,25 +394,38 @@ class Gui(wx.Frame):
 
         # ----- Configure the widgets -----
         # Run
-        run_text1 = wx.StaticText(self, wx.ID_ANY, wx.GetTranslation(u"Run for N Cycles"))
-        cycles_text = wx.StaticText(self, wx.ID_ANY, wx.GetTranslation(u"Cycles:"))
-        self.cycles_spin = wx.SpinCtrl(self, wx.ID_ANY, '20', min=1, max=10000)
-        self.run_button = wx.Button(self, self.RUN_ID, wx.GetTranslation(u"Run"))
-        continue_button = wx.Button(self, self.CLEAR_ID, wx.GetTranslation(u"Clear"))
-        run_text2 = wx.StaticText(self, wx.ID_ANY, wx.GetTranslation(u"Run Indefinitely"))
-        play_button = wx.Button(self, self.PLAY_ID, wx.GetTranslation(u"Play"))
-        pause_button = wx.Button(self, self.PAUSE_ID, wx.GetTranslation(u"Pause"))
-        self.speed_slider = wx.Slider(self, wx.ID_ANY, 3, 0, 6, size=(100, -1))
-        text = wx.GetTranslation(u"Speed: ")+str(self.SPEEDS[self.speed_slider.GetValue()])+"x"
-        self.speed_slider_text = wx.StaticText(self, wx.ID_ANY, text)
-        total_cycles_text = wx.StaticText(self, wx.ID_ANY, wx.GetTranslation(u"Total Cycles: "))
+        run_text1 = wx.StaticText(
+            self, wx.ID_ANY, wx.GetTranslation(u"Run for N Cycles"))
+        cycles_text = wx.StaticText(
+            self, wx.ID_ANY, wx.GetTranslation(u"Cycles:"))
+        self.cycles_spin = wx.SpinCtrl(
+            self, wx.ID_ANY, '20', min=1, max=10000)
+        self.run_button = wx.Button(
+            self, self.RUN_ID, wx.GetTranslation(u"Run"))
+        continue_button = wx.Button(
+            self, self.CLEAR_ID, wx.GetTranslation(u"Clear"))
+        run_text2 = wx.StaticText(
+            self, wx.ID_ANY, wx.GetTranslation(u"Run Indefinitely"))
+        play_button = wx.Button(
+            self, self.PLAY_ID, wx.GetTranslation(u"Play"))
+        pause_button = wx.Button(
+            self, self.PAUSE_ID, wx.GetTranslation(u"Pause"))
+        self.speed_slider = wx.Slider(
+            self, wx.ID_ANY, 3, 0, 6, size=(100, -1))
+        self.speed_slider_text = wx.StaticText(
+            self, wx.ID_ANY, wx.GetTranslation(u"Speed: ")
+            + str(self.SPEEDS[self.speed_slider.GetValue()])+"x")
+        total_cycles_text = wx.StaticText(
+            self, wx.ID_ANY, wx.GetTranslation(u"Total Cycles: "))
         self.total_cycles_text = wx.StaticText(self, wx.ID_ANY, "0")
 
         # Monitors
-        monitors_text = wx.StaticText(self, wx.ID_ANY, wx.GetTranslation(u"Monitors"))
+        monitors_text = wx.StaticText(
+            self, wx.ID_ANY, wx.GetTranslation(u"Monitors"))
 
         # Switches
-        switches_text = wx.StaticText(self, wx.ID_ANY, wx.GetTranslation(u"Switches"))
+        switches_text = wx.StaticText(
+            self, wx.ID_ANY, wx.GetTranslation(u"Switches"))
 
         # Canvas
         self.canvas = MyGLCanvas(self)
@@ -463,7 +479,8 @@ class Gui(wx.Frame):
         play_pause_sizer.Add(pause_button, 1, wx.CENTER)
         speed_sizer.Add(self.speed_slider_text, 1, wx.CENTER | wx.RIGHT, 10)
         speed_sizer.Add(self.speed_slider)
-        total_sizer.Add(total_cycles_text, 0, wx.CENTER | wx.RIGHT | wx.BOTTOM, 10)
+        total_sizer.Add(
+            total_cycles_text, 0, wx.CENTER | wx.RIGHT | wx.BOTTOM, 10)
         total_sizer.Add(self.total_cycles_text, 0, wx.CENTER | wx.BOTTOM, 10)
         monitors_sizer.Add(monitors_text, 0, wx.CENTER | wx.BOTTOM, 10)
         monitors_sizer.Add(self.monitors_scroll, 2,
@@ -595,7 +612,8 @@ class Gui(wx.Frame):
 
     def _on_slider(self, event):
         """Handle slider events."""
-        text = wx.GetTranslation(u"Speed: ")+str(self.SPEEDS[self.speed_slider.GetValue()])+"x"
+        text = wx.GetTranslation(u"Speed: ")\
+            + str(self.SPEEDS[self.speed_slider.GetValue()])+"x"
         self.speed_slider_text.SetLabel(text)
         if self.timer.IsRunning():
             self.timer.Stop()
