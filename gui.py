@@ -186,7 +186,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
             for i, item in enumerate(self.monitors_dictionary.items()):
                 sig_name = item[0][0]
                 y = TOP - (self.LINE_HEIGHT * i) - (BORDER_Y / 4)
-                self.render_text(sig_name, 10, y, False, False, colours[i])
+                self._render_text(sig_name, 10, y, False, False, colours[i])
 
         # Undo vertical scroll and re-add horizontal
         GL.glTranslated(self.pan_x, -self.pan_y, 0.0)
@@ -213,14 +213,14 @@ class MyGLCanvas(wxcanvas.GLCanvas):
                 num = CYCLES_PER_TICK*(i-self.BORDER_X)\
                     // (CYCLES_PER_TICK*self.DX)
                 if num >= 0:
-                    self.render_text(
+                    self._render_text(
                         str(num), i,
                         self.size.height - (self.SCALE_HEIGHT / 2))
 
         GL.glFlush()
         self.SwapBuffers()
 
-    def render_text(self, text, x_pos, y_pos,
+    def _render_text(self, text, x_pos, y_pos,
                     center=True, big=True, colour=(1.0, 1.0, 1.0)):
         """Handle text drawing operations."""
         GL.glColor3f(colour[0], colour[1], colour[2])
