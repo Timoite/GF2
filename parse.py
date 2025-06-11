@@ -206,39 +206,21 @@ class Parser:
                 arrow_pos = self._seek_error(current_line, "first")
                 print("Error in line:")
                 print(current_line)
-                i = 0
-                arrow_str = ""
-                while i < arrow_pos:
-                    arrow_str = arrow_str + " "
-                    i += 1
-                arrow_str = arrow_str + "^"
-                print(arrow_str)
+                self._print_arrow(arrow_pos)
                 print("Error: A connection’s first port must be "
                       "an output port.")
             elif error_type == self.network.OUTPUT_TO_OUTPUT:
                 arrow_pos = self._seek_error(current_line, "second")
                 print("Error in line:")
                 print(current_line)
-                i = 0
-                arrow_str = ""
-                while i < arrow_pos:
-                    arrow_str = arrow_str + " "
-                    i += 1
-                arrow_str = arrow_str + "^"
-                print(arrow_str)
+                self._print_arrow(arrow_pos)
                 print("Error: A connection's second port must be "
                       "an input port.")
             elif error_type == self.network.FIRST_PORT_ABSENT:
                 arrow_pos = self._seek_error(current_line, "first")
                 print("Error in line:")
                 print(current_line)
-                i = 0
-                arrow_str = ""
-                while i < arrow_pos:
-                    arrow_str = arrow_str + " "
-                    i += 1
-                arrow_str = arrow_str + "^"
-                print(arrow_str)
+                self._print_arrow(arrow_pos)
                 print("Error: The specified device does not have "
                       "a port with this ID.")
             elif error_type == self.network.SECOND_PORT_ABSENT:
@@ -246,13 +228,7 @@ class Parser:
                 arrow_pos = self._seek_error(current_line, "second")
                 print("Error in line:")
                 print(current_line)
-                i = 0
-                arrow_str = ""
-                while i < arrow_pos:
-                    arrow_str = arrow_str + " "
-                    i += 1
-                arrow_str = arrow_str + "^"
-                print(arrow_str)
+                self._print_arrow(arrow_pos)
                 print("Error: The specified device does not have "
                       "a port with this ID. (If this is the last "
                       "connection in the list, check that the"
@@ -262,102 +238,54 @@ class Parser:
                 arrow_pos = self._seek_error(current_line, "=")
                 print("Error in line:")
                 print(current_line)
-                i = 0
-                arrow_str = ""
-                while i < arrow_pos:
-                    arrow_str = arrow_str + " "
-                    i += 1
-                arrow_str = arrow_str + "^"
-                print(arrow_str)
+                self._print_arrow(arrow_pos)
                 print("Error: No device with this ID has been defined.")
             elif error_type == self.network.SECOND_DEVICE_ABSENT:
                 arrow_pos = self._seek_error(current_line, ">")
                 print("Error in line:")
                 print(current_line)
-                i = 0
-                arrow_str = ""
-                while i < arrow_pos:
-                    arrow_str = arrow_str + " "
-                    i += 1
-                arrow_str = arrow_str + "^"
-                print(arrow_str)
+                self._print_arrow(arrow_pos)
                 print("Error: No device with this ID has been defined.")
             elif error_type == self.network.INPUT_CONNECTED:
                 arrow_pos = self._seek_error(current_line, "second")
                 print("Error in line:")
                 print(current_line)
-                i = 0
-                arrow_str = ""
-                while i < arrow_pos:
-                    arrow_str = arrow_str + " "
-                    i += 1
-                arrow_str = arrow_str + "^"
-                print(arrow_str)
+                self._print_arrow(arrow_pos)
                 print("Error: There is already a connection leading to the "
                       "specified input port.")
             elif error_type == self.devices.ZERO_QUALIFIER:
                 arrow_pos = self._seek_error(current_line, "/")
                 print("Error in line:")
                 print(current_line)
-                i = 0
-                arrow_str = ""
-                while i < arrow_pos:
-                    arrow_str = arrow_str + " "
-                    i += 1
-                arrow_str = arrow_str + "^"
-                print(arrow_str)
+                self._print_arrow(arrow_pos)
                 print("Error: A CLOCK device’s qualifier must be "
                       "a non-zero integer.")
             elif error_type == self.devices.INVALID_QUALIFIER:
                 arrow_pos = self._seek_error(current_line, "/")
                 print("Error in line:")
                 print(current_line)
-                i = 0
-                arrow_str = ""
-                while i < arrow_pos:
-                    arrow_str = arrow_str + " "
-                    i += 1
-                arrow_str = arrow_str + "^"
-                print(arrow_str)
+                self._print_arrow(arrow_pos)
                 print("Error: A SWITCH device may only have "
                       "a qualifier of 0 or 1.")
             elif error_type == self.devices.QUALIFIER_OUT_OF_RANGE:
                 arrow_pos = self._seek_error(current_line, "/")
                 print("Error in line:")
                 print(current_line)
-                i = 0
-                arrow_str = ""
-                while i < arrow_pos:
-                    arrow_str = arrow_str + " "
-                    i += 1
-                arrow_str = arrow_str + "^"
-                print(arrow_str)
+                self._print_arrow(arrow_pos)
                 print("Error: The qualifier for this type of logic gate "
                       "must be between 2 and 16.")
             elif error_type == self.devices.QUALIFIER_PRESENT:
                 arrow_pos = self._seek_error(current_line, "/")
                 print("Error in line:")
                 print(current_line)
-                i = 0
-                arrow_str = ""
-                while i < arrow_pos:
-                    arrow_str = arrow_str + " "
-                    i += 1
-                arrow_str = arrow_str + "^"
-                print(arrow_str)
+                self._print_arrow(arrow_pos)
                 print("Error: Devices of this type should not have "
                       "a qualifier.")
             elif error_type == self.devices.NOT_BINARY:
                 arrow_pos = self._seek_error(current_line, "/")
                 print("Error in line:")
                 print(current_line)
-                i = 0
-                arrow_str = ""
-                while i < arrow_pos:
-                    arrow_str = arrow_str + " "
-                    i += 1
-                arrow_str = arrow_str + "^"
-                print(arrow_str)
+                self._print_arrow(arrow_pos)
                 print("Error: This device's qualifier should be "
                       "a binary number.")
             elif error_type == self.devices.DEVICE_PRESENT:
@@ -369,25 +297,13 @@ class Parser:
                 arrow_pos = self._seek_error(current_line, ",") - 1
                 print("Error in line:")
                 print(current_line)
-                i = 0
-                arrow_str = ""
-                while i < arrow_pos:
-                    arrow_str = arrow_str + " "
-                    i += 1
-                arrow_str = arrow_str + "^"
-                print(arrow_str)
+                self._print_arrow(arrow_pos)
                 print("Error: This device type requires a qualifier.")
             elif error_type == self.monitors.NOT_OUTPUT:
                 arrow_pos = self._seek_error(current_line, "first")
                 print("Error in line:")
                 print(current_line)
-                i = 0
-                arrow_str = ""
-                while i < arrow_pos:
-                    arrow_str = arrow_str + " "
-                    i += 1
-                arrow_str = arrow_str + "^"
-                print(arrow_str)
+                self._print_arrow(arrow_pos)
                 print("Error: The specified port is an input port or not "
                       "defined. Monitors may only connect to output ports."
                       "(If this is the last monitor in the list, check "
@@ -397,13 +313,7 @@ class Parser:
                 arrow_pos = self._seek_error(current_line, "first")
                 print("Error in line:")
                 print(current_line)
-                i = 0
-                arrow_str = ""
-                while i < arrow_pos:
-                    arrow_str = arrow_str + " "
-                    i += 1
-                arrow_str = arrow_str + "^"
-                print(arrow_str)
+                self._print_arrow(arrow_pos)
                 print("Error: There is already a monitor connected "
                       "to this output port.")
             elif error_type == self.UNCONNECTED_INPUT:
@@ -411,6 +321,10 @@ class Parser:
                       "with an unconnected input. If this input "
                       "is meant to be unused, connect a switch "
                       "with qualifier 0 to it.")
+            """Note to examiner: I have opted to keep the if/elif statement a
+            is, largely for ease of maintenance. I have however split the while
+            loops for generating arrows off into a seperate function which has
+            eliminated a fair amount of the repetition."""
 
     def _seek_error(self, current_line, target):
         """Semantic errors use this function to generate an arrow
@@ -433,6 +347,15 @@ class Parser:
             character, as per the EBNF the source of the semantic error
             must follow it - this returns the next position"""
             return current_line.find(target) + 1
+
+    def _print_arrow(self, arrow_pos):
+        i = 0
+        arrow_str = ""
+        while i < arrow_pos:
+            arrow_str = arrow_str + " "
+            i += 1
+        arrow_str = arrow_str + "^"
+        print(arrow_str)
 
     def _name(self):
         """Generate a name - a combination of letters,
