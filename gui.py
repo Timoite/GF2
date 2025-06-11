@@ -382,9 +382,9 @@ class Gui(wx.Frame):
         # Configure the toolbar
         toolbar = self.CreateToolBar()
         myimage = wx.ArtProvider.GetBitmap(wx.ART_FILE_OPEN, wx.ART_TOOLBAR)
-        toolbar.AddTool(self.OPEN_ID, "Open file", myimage)
+        toolbar.AddTool(self.OPEN_ID, _(u"Open file"), myimage)
         myimage = wx.ArtProvider.GetBitmap(wx.ART_QUIT, wx.ART_TOOLBAR)
-        toolbar.AddTool(self.QUIT_ID, "Quit", myimage)
+        toolbar.AddTool(self.QUIT_ID, _(u"Quit"), myimage)
         toolbar.Realize()
         self.ToolBar = toolbar
 
