@@ -668,6 +668,8 @@ class Gui(wx.Frame):
                 wildcard=wx.GetTranslation(u"TXT files (*.txt)|*.txt"),
                 style=wx.FD_OPEN+wx.FD_FILE_MUST_EXIST)
             if openFileDialog.ShowModal() == wx.ID_CANCEL:
+                if not self.path:
+                    self._quit(None)
                 return
             path = openFileDialog.GetPath()
         self.path = path
