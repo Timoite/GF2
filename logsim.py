@@ -72,7 +72,7 @@ def main(arg_list):
         # Check the environment variable LANG
         lang = os.environ.get('LANG', 'en_US.UTF-8')
         # Get the system language
-        # system_lang = wx.Locale.GetSystemLanguage()
+        system_lang = wx.Locale.GetSystemLanguage()
         # print(f"System language: {system_lang}, Environment LANG: {lang}")
 
         if ('zh' in lang or
