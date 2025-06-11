@@ -26,6 +26,7 @@ from userint import UserInterface
 
 from gui import Gui
 
+
 def main(arg_list):
     """Parse the command line options and arguments specified in arg_list.
 
@@ -67,13 +68,15 @@ def main(arg_list):
             path = None
 
         app = wx.App()
-        
-        lang = os.environ.get('LANG', 'en_US.UTF-8') # Check the environment variable LANG
-        system_lang = wx.Locale.GetSystemLanguage() # Get the system language
-        print(f"System language: {system_lang}, Environment LANG: {lang}")
-        
-        if ('zh' in lang or 
-            system_lang in [wx.LANGUAGE_CHINESE, 
+
+        # Check the environment variable LANG
+        lang = os.environ.get('LANG', 'en_US.UTF-8')
+        # Get the system language
+        # system_lang = wx.Locale.GetSystemLanguage()
+        # print(f"System language: {system_lang}, Environment LANG: {lang}")
+
+        if ('zh' in lang or
+            system_lang in [wx.LANGUAGE_CHINESE,
                             wx.LANGUAGE_CHINESE_SIMPLIFIED]):
             locale = wx.Locale(wx.LANGUAGE_CHINESE_SIMPLIFIED)
         else:
