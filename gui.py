@@ -20,7 +20,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
     also contains handlers for events relating to the canvas.
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         """Initialise canvas properties and useful variables."""
         super().__init__(parent, -1,
                          attribList=[wxcanvas.WX_GL_RGBA,
@@ -52,7 +52,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         self.Bind(wx.EVT_SIZE, self._on_size)
         self.Bind(wx.EVT_MOUSE_EVENTS, self._on_mouse)
 
-    def _init_gl(self):
+    def _init_gl(self) -> None:
         """Configure and initialise the OpenGL context."""
         size = self.GetClientSize()
         self.SetCurrent(self.context)
@@ -67,7 +67,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         GL.glTranslated(self.pan_x, self.pan_y, 0.0)
         GL.glScaled(self.zoom_x, self.zoom_x, self.zoom_x)
 
-    def _on_paint(self, event):
+    def _on_paint(self, event) -> None:
         """Handle the paint event."""
         self.SetCurrent(self.context)
         if not self.init:
@@ -78,13 +78,13 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         self.size = self.GetClientSize()
         self._render()
 
-    def _on_size(self, event):
+    def _on_size(self, event) -> None:
         """Handle the canvas resize event."""
         # Forces reconfiguration of the viewport, modelview and projection
         # matrices on the next paint event
         self.init = False
 
-    def _render(self):
+    def _render(self) -> None:
         """Handle all drawing operations."""
         self.SetCurrent(self.context)
         if not self.init:
@@ -221,7 +221,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         self.SwapBuffers()
 
     def _render_text(self, text, x_pos, y_pos,
-                     center=True, big=True, colour=(1.0, 1.0, 1.0)):
+                     center=True, big=True, colour=(1.0, 1.0, 1.0)) -> None:
         """Handle text drawing operations."""
         GL.glColor3f(colour[0], colour[1], colour[2])
         if big:
@@ -238,7 +238,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
         for character in text:
             GLUT.glutBitmapCharacter(font, ord(character))
 
-    def _on_mouse(self, event):
+    def _on_mouse(self, event) -> None:
         """Handle mouse events."""
         # Calculate object coordinates of the mouse position
         ox = (event.GetX() - self.pan_x) / self.zoom_x
@@ -283,7 +283,7 @@ class MyGLCanvas(wxcanvas.GLCanvas):
 
         self.Refresh()
 
-    def check_canvas_size(self):
+    def check_canvas_size(self) -> None:
         """Recalculate the size of the canvas."""
         # Limit zoom
         self.zoom_x = max(0.01, self.zoom_x)
@@ -335,7 +335,7 @@ class Gui(wx.Frame):
     enables the user to change the circuit properties and run simulations.
     """
 
-    def __init__(self, title, path):
+    def __init__(self, title, path) -> None:
         """Initialise static widgets and layout."""
         super().__init__(parent=None, title=title, size=(400, 400))
         self.path = None
@@ -517,7 +517,7 @@ class Gui(wx.Frame):
 
         self._open_file(None, path)
 
-    def _add_switch(self, switch_id, switch_state):
+    def _add_switch(self, switch_id, switch_state) -> None:
         """Add a switch to GUI."""
         switch_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.switches_rows_sizer.Add(switch_sizer, 0, wx.CENTER | wx.ALL, 5)
@@ -529,15 +529,16 @@ class Gui(wx.Frame):
         switch_sizer.Add(switch_radiobox, 0, wx.CENTER)
         switch_radiobox.Bind(wx.EVT_RADIOBOX, lambda evt,
                              temp=switch_id: self._on_switch(evt, temp))
+        self.switches_scroll.FitInside()
         self.Layout()
 
-    def _on_switch(self, event, switch_id):
+    def _on_switch(self, event, switch_id) -> None:
         """Handle event when a switch is toggled."""
         switch_state = event.GetSelection()
         if not self.devices.set_switch(switch_id, switch_state):
             print(wx.GetTranslation(u"Error! Invalid switch."))
 
-    def _add_monitor(self, signal_name):
+    def _add_monitor(self, signal_name) -> None:
         """Create a new monitor."""
         # Get which signal to add
         [device_id, output_id] = self.devices.get_signal_ids(signal_name)
@@ -552,7 +553,7 @@ class Gui(wx.Frame):
         else:
             print(wx.GetTranslation(u"Error! Could not make monitor."))
 
-    def _zap_montior(self, signal_name):
+    def _zap_monitor(self, signal_name) -> None:
         """Remove the specified monitor."""
         # Get which signal to zap
         [device_id, output_id] = self.devices.get_signal_ids(signal_name)
@@ -564,7 +565,7 @@ class Gui(wx.Frame):
         else:
             print(wx.GetTranslation(u"Error! Could not zap monitor."))
 
-    def _update_monitor_list(self):
+    def _update_monitor_list(self) -> None:
         """Update the monitor selection list."""
         # Clear the list
         self.monitors_rows_sizer.Clear(True)
@@ -598,9 +599,10 @@ class Gui(wx.Frame):
             self.monitors_rows_sizer.Add(
                 monitor_row_sizer, 0, wx.CENTER | wx.EXPAND | wx.ALL, 5)
 
+        self.monitors_scroll.FitInside()
         self.Layout()
 
-    def _on_checkbox(self, event):
+    def _on_checkbox(self, event) -> None:
         """Handle checkbox events."""
         checkbox = event.GetEventObject()
         signal_name = checkbox.GetLabel()
@@ -608,10 +610,10 @@ class Gui(wx.Frame):
         if checked:
             self._add_monitor(signal_name)
         else:
-            self._zap_montior(signal_name)
+            self._zap_monitor(signal_name)
         self.canvas.Refresh()
 
-    def _on_slider(self, event):
+    def _on_slider(self, event) -> None:
         """Handle slider events."""
         text = wx.GetTranslation(u"Speed: ")\
             + str(self.SPEEDS[self.speed_slider.GetValue()])+"x"
@@ -621,7 +623,7 @@ class Gui(wx.Frame):
             self.timer.Start(int(
                 self.DEF_SPEED / self.SPEEDS[self.speed_slider.GetValue()]))
 
-    def _on_menu(self, event):
+    def _on_menu(self, event) -> None:
         """Handle menu events."""
         Id = event.GetId()
         if Id == self.OPEN_ID:
@@ -648,7 +650,7 @@ class Gui(wx.Frame):
         else:
             self._on_run(event)
 
-    def _on_toolbar(self, event):
+    def _on_toolbar(self, event) -> None:
         """Handle toolbar events."""
         Id = event.GetId()
         if Id == self.OPEN_ID:
@@ -656,7 +658,7 @@ class Gui(wx.Frame):
         elif Id == self.QUIT_ID:
             self._quit(event)
 
-    def _open_file(self, event, path=None):
+    def _open_file(self, event, path=None) -> None:
         """Load a file into the simulator."""
         if self.timer.IsRunning():
             print("Error! Simulation is running")
@@ -710,7 +712,7 @@ class Gui(wx.Frame):
         self.canvas.Refresh()
         self.has_started = False
 
-    def _run_network(self, event=None, cycles=1):
+    def _run_network(self, event=None, cycles=1) -> None:
         """Run the network for the specified number of simulation cycles.
 
         Return True if successful.
@@ -739,7 +741,7 @@ class Gui(wx.Frame):
 
         return True
 
-    def _on_run(self, event):
+    def _on_run(self, event) -> None:
         """Handle run/continue/play/pause operations."""
         # Handle the case that no file has yet been opened
         if not self.monitors:
@@ -795,13 +797,13 @@ class Gui(wx.Frame):
         else:
             self.run_button.SetLabel(wx.GetTranslation(u"Run"))
 
-    def _on_scroll(self, event):
+    def _on_scroll(self, event) -> None:
         """Handle canvas repositioning on scroll."""
         self.canvas.pan_x = -self.hscrollbar.GetThumbPosition()
         self.canvas.pan_y = self.vscrollbar.GetThumbPosition()
         self.canvas.Refresh()
 
-    def generate_colours(self, n) -> list:
+    def generate_colours(self, n) -> list[list[float]]:
         """Generate n unique colours."""
         def hsv_to_rgb(h, s, v):
             i = int(h * 6)
@@ -831,6 +833,6 @@ class Gui(wx.Frame):
             colours.append(rgb)
         return colours
 
-    def _quit(self, event):
+    def _quit(self, event) -> None:
         """Exit the program."""
         sys.exit()
