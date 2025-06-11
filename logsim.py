@@ -15,6 +15,7 @@ import sys
 import os
 
 import wx
+import builtins
 
 from names import Names
 from devices import Devices
@@ -69,6 +70,8 @@ def main(arg_list):
 
         app = wx.App()
 
+        # Internationalisation setup
+        builtins._ = wx.GetTranslation
         # Check the environment variable LANG
         lang = os.environ.get('LANG', 'en_US.UTF-8')
         # Get the system language
@@ -85,7 +88,7 @@ def main(arg_list):
         locale.AddCatalogLookupPathPrefix('locale')
         locale.AddCatalog('logsim')
 
-        gui = Gui(wx.GetTranslation("Logic Simulatorinator"), path)
+        gui = Gui(_("Logic Simulatorinator"), path)
         gui.Show(True)
         app.MainLoop()
 
