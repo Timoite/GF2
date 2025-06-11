@@ -801,7 +801,7 @@ class Gui(wx.Frame):
         self.canvas.pan_y = self.vscrollbar.GetThumbPosition()
         self.canvas.Refresh()
 
-    def generate_colours(self, n):
+    def generate_colours(self, n) -> list:
         """Generate n unique colours."""
         def hsv_to_rgb(h, s, v):
             i = int(h * 6)
