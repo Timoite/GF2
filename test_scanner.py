@@ -4,6 +4,7 @@ from final.scanner import Scanner, Symbol
 from final.names import Names
 import os
 
+
 @pytest.fixture
 def new_scanner():
     """Return a Scanner class instance."""
@@ -11,7 +12,8 @@ def new_scanner():
         new_names = Names()
         # Resolve path to test_files directory at base level
         base_dir = os.path.dirname(os.path.dirname(__file__))
-        file_path = os.path.join(base_dir, "GF2/test_files", file_name + ".txt")
+        file_path = os.path.join(base_dir, "GF2/test_files",
+                                 file_name + ".txt")
         return Scanner(file_path, new_names)
     return _create_scanner
 
