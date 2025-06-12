@@ -9,12 +9,12 @@ raises the expected exception.
 import pytest
 import os
 
-from names import Names
-from devices import Devices
-from network import Network
-from monitors import Monitors
-from scanner import Scanner
-from parse import Parser
+from final.names import Names
+from final.devices import Devices
+from final.network import Network
+from final.monitors import Monitors
+from final.scanner import Scanner
+from final.parse import Parser
 
 
 @pytest.fixture

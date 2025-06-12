@@ -1,7 +1,7 @@
 '''Test the scanner module'''
 import pytest
-from scanner import Scanner, Symbol
-from names import Names
+from final.scanner import Scanner, Symbol
+from final.names import Names
 import os
 
 @pytest.fixture
