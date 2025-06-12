@@ -2,16 +2,17 @@
 import pytest
 from scanner import Scanner, Symbol
 from names import Names
-
+import os
 
 @pytest.fixture
 def new_scanner():
     """Return a Scanner class instance."""
-    # Assuming 'test_file.txt' is a valid test file in the
-    # tests/test_files directory
     def _create_scanner(file_name):
         new_names = Names()
-        return Scanner(file_name + ".txt", new_names)
+        # Resolve path to test_files directory at base level
+        base_dir = os.path.dirname(os.path.dirname(__file__))
+        file_path = os.path.join(base_dir, "test_files", file_name + ".txt")
+        return Scanner(file_path, new_names)
     return _create_scanner
 
 
