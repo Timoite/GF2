@@ -25,7 +25,9 @@ def parser_factory():
         devices = Devices(names)
         network = Network(names, devices)
         monitors = Monitors(names, devices, network)
-        file_path = "/GF2/test_files/" + filename
+        # Resolve path relative to the BASE folder, not the 'final' subfolder
+        base_dir = os.path.dirname(os.path.dirname(__file__))
+        file_path = os.path.join(base_dir, "GF2/test_files", filename)
         scanner = Scanner(file_path, names)
         return Parser(names, devices, network, monitors, scanner)
     return _create_parser
