@@ -26,8 +26,7 @@ def parser_factory():
         network = Network(names, devices)
         monitors = Monitors(names, devices, network)
         # Resolve path relative to the BASE folder, not the 'final' subfolder
-        base_dir = os.path.dirname(os.path.dirname(__file__))
-        file_path = os.path.join(base_dir, "test_files", filename)
+        file_path = "/home/test_files" + filename
         scanner = Scanner(file_path, names)
         return Parser(names, devices, network, monitors, scanner)
     return _create_parser
