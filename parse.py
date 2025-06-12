@@ -273,7 +273,7 @@ class Parser:
                 print(current_line)
                 self._print_arrow(arrow_pos)
                 print("Error: The qualifier for this type of logic gate "
-                      "must be between 2 and 16.")
+                      "must be between 1 and 16.")
             elif error_type == self.devices.QUALIFIER_PRESENT:
                 arrow_pos = self._seek_error(current_line, "/")
                 print("Error in line:")
