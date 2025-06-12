@@ -1,0 +1,190 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-11 17:04+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: gui.py:364
+msgid "&Open"
+msgstr ""
+
+#: gui.py:365
+msgid "&About"
+msgstr ""
+
+#: gui.py:366
+msgid "&Exit"
+msgstr ""
+
+#: gui.py:368
+msgid "&Run / Continue"
+msgstr ""
+
+#: gui.py:369
+msgid "&Clear"
+msgstr ""
+
+#: gui.py:370
+msgid "&Play"
+msgstr ""
+
+#: gui.py:371
+msgid "&Pause"
+msgstr ""
+
+#: gui.py:373
+msgid "&Zoom In"
+msgstr ""
+
+#: gui.py:374
+msgid "&Zoom Out"
+msgstr ""
+
+#: gui.py:375
+msgid "&Reset Zoom"
+msgstr ""
+
+#: gui.py:377
+msgid "&File"
+msgstr ""
+
+#: gui.py:378
+msgid "&Run"
+msgstr ""
+
+#: gui.py:379
+msgid "&View"
+msgstr ""
+
+#: gui.py:385
+msgid "Open file"
+msgstr ""
+
+#: gui.py:387
+msgid "Quit"
+msgstr ""
+
+#: gui.py:394
+msgid "Run for N Cycles"
+msgstr ""
+
+#: gui.py:396
+msgid "Cycles:"
+msgstr ""
+
+#: gui.py:400 gui.py:794
+msgid "Run"
+msgstr ""
+
+#: gui.py:402
+msgid "Clear"
+msgstr ""
+
+#: gui.py:404
+msgid "Run Indefinitely"
+msgstr ""
+
+#: gui.py:406
+msgid "Play"
+msgstr ""
+
+#: gui.py:408
+msgid "Pause"
+msgstr ""
+
+#: gui.py:412 gui.py:614
+msgid "Speed: "
+msgstr ""
+
+#: gui.py:415
+msgid "Total Cycles: "
+msgstr ""
+
+#: gui.py:420
+msgid "Monitors"
+msgstr ""
+
+#: gui.py:424
+msgid "Switches"
+msgstr ""
+
+#: gui.py:535
+msgid "Error! Invalid switch."
+msgstr ""
+
+#: gui.py:548
+msgid "Successfully made monitor."
+msgstr ""
+
+#: gui.py:550
+msgid "Error! Could not make monitor."
+msgstr ""
+
+#: gui.py:560
+msgid "Successfully zapped monitor."
+msgstr ""
+
+#: gui.py:562
+msgid "Error! Could not zap monitor."
+msgstr ""
+
+#: gui.py:630
+msgid ""
+"Logic Simulatorinator\n"
+"                          Created by Harry Weedon,                           "
+"Thomas Barker and Tim Tan\n"
+"2025"
+msgstr ""
+
+#: gui.py:665
+msgid "Open txt file"
+msgstr ""
+
+#: gui.py:666
+msgid "TXT files (*.txt)|*.txt"
+msgstr ""
+
+#: gui.py:674
+msgid "File chosen ="
+msgstr ""
+
+#: gui.py:691
+msgid "Error! Unable to parse file."
+msgstr ""
+
+#: gui.py:744
+msgid "Error! Please open a file first"
+msgstr ""
+
+#: gui.py:756 gui.py:784
+msgid "Error! Already running simulation"
+msgstr ""
+
+#: gui.py:776
+msgid "Error! Unable to clear"
+msgstr ""
+
+#: gui.py:789
+msgid "Error! Not running simulation"
+msgstr ""
+
+#: gui.py:792
+msgid "Continue"
+msgstr ""
+
+#: logsim.py:91
+msgid "Logic Simulatorinator"
+msgstr ""
